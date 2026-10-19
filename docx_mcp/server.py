@@ -12,6 +12,7 @@ transparently share a single `__default__` slot — same behavior as before.
 from __future__ import annotations
 
 import json
+import os
 import sys as _sys
 import threading
 import uuid
@@ -40,6 +41,16 @@ _DEFAULT_HANDLE = "__default__"
 _docs: dict[str, DocxDocument] = {}
 _docs_lock = threading.RLock()
 
+# Singleton mode guard: when DOCX_MCP_REQUIRE_HANDLE is truthy, the shared
+# `__default__` slot is disabled so concurrent sessions cannot overwrite each
+# other's documents. Callers must pass an explicit unique handle.
+_REQUIRE_HANDLE = os.environ.get("DOCX_MCP_REQUIRE_HANDLE", "").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
 
 def _js(obj: object) -> str:
     """Serialize to compact JSON for MCP responses."""
@@ -47,7 +58,15 @@ def _js(obj: object) -> str:
 
 
 def _key(handle: str) -> str:
-    return handle or _DEFAULT_HANDLE
+    key = handle or _DEFAULT_HANDLE
+    if _REQUIRE_HANDLE and key == _DEFAULT_HANDLE:
+        raise RuntimeError(
+            "document_handle is required in singleton mode (DOCX_MCP_REQUIRE_HANDLE=1). "
+            "Pass a unique handle to open_document/create_document/create_from_markdown "
+            "and to every subsequent call, e.g. f'{session_id}-{uuid4().hex[:8]}'. "
+            "The shared __default__ slot is disabled to prevent cross-session collisions."
+        )
+    return key
 
 
 def _resolve(handle: str) -> tuple[str, DocxDocument]:
