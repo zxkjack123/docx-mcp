@@ -1,0 +1,92 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "fispact-lint": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8069/mcp",
+        "disabled": true
+      },
+      "freecad": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8079/mcp",
+        "disabled": true
+      },
+      "fusion-kg": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8040/mcp",
+        "disabled": true
+      },
+      "fusion-params": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8074/mcp",
+        "disabled": true
+      },
+      "innovation-review-workflow": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8076/mcp",
+        "disabled": true
+      },
+      "jupyter": {
+        "type": "remote",
+        "url": "http://127.0.0.1:12411/mcp",
+        "disabled": true
+      },
+      "ldr": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8016/mcp",
+        "disabled": true
+      },
+      "mcnp-lint": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8068/mcp",
+        "disabled": true
+      },
+      "mcpzotero": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8077/mcp",
+        "disabled": true
+      },
+      "nuclear-data-mcp": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8082/mcp",
+        "disabled": true
+      },
+      "openmc-validator": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8078/mcp",
+        "disabled": true
+      },
+      "paper-review-workflow": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8075/mcp",
+        "disabled": true
+      },
+      "plausibility-check": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8080/mcp",
+        "disabled": true
+      },
+      "playwright": {
+        "type": "remote",
+        "url": "http://localhost:12413/mcp",
+        "disabled": true
+      },
+      "scnetresource-router": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8766/mcp",
+        "disabled": true
+      },
+      "thunderbird-mcp": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8015/mcp/",
+        "disabled": true
+      },
+      "zotpilot": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8084/mcp",
+        "disabled": true
+      }
+    }
+  }
+}
