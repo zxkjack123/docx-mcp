@@ -1254,6 +1254,11 @@ def replace_text(
     as plain runs. With tracked=False the replacement is applied immediately without
     any visible markup.
 
+    Replacing text that sits inside an unresolved tracked insertion raises ValueError;
+    the message carries the conflicting change_id/author/date and the exact
+    accept_change(change_id=...) call that resolves it (accept/reject the insertion,
+    then retry).
+
     Args:
         para_id: paraId of the target paragraph.
         find: Text to find and replace (may span run boundaries).

@@ -341,6 +341,50 @@ def _collapse_diff(find: str, replace: str) -> tuple[str, str, str, str]:
 # ── Deletion helper ───────────────────────────────────────────────────────────
 
 
+def _preflight_deletion(
+    para_id: str,
+    slot_s: int,
+    slot_e: int,
+    slots: list[_Slot],
+) -> None:
+    """Fail early (before any mutation) if a deletion overlaps a ``<w:ins>``.
+
+    Deleting text that lives inside an unresolved tracked insertion is not
+    supported (see :func:`_apply_deletion`).  Raising a bare "Cannot delete
+    text inside an existing w:ins" leaves the caller with no way forward, and
+    30-day MCP telemetry showed this to be the single largest error bucket for
+    ``replace_text`` (41.9%).  The message therefore carries the conflicting
+    insertion's ``change_id``/author/date plus the concrete tool calls that
+    resolve it.
+    """
+    seen: set[int] = set()
+    hits: list[etree._Element] = []
+    for s in slots[slot_s:slot_e]:
+        if s.in_ins is not None and id(s.in_ins) not in seen:
+            seen.add(id(s.in_ins))
+            hits.append(s.in_ins)
+    if not hits:
+        return
+
+    described: list[str] = []
+    hints: list[str] = []
+    for ins in hits:
+        cid = ins.get(f"{W}id")
+        author = ins.get(f"{W}author") or "(unknown)"
+        date = ins.get(f"{W}date") or "(unknown)"
+        described.append(f"change_id={cid}, author={author!r}, date={date}")
+        hints.append(f"accept_change(change_id={cid})" if cid else "accept_changes(author='...')")
+
+    raise ValueError(
+        "Cannot delete text inside an existing w:ins "
+        f"(paragraph {para_id!r}; {len(hits)} overlapping insertion(s): "
+        f"{'; '.join(described)}). "
+        f"Resolve the insertion first: call {' or '.join(hints)} "
+        "(or reject_changes(author=...)), then retry; alternatively target text "
+        "outside the insertion."
+    )
+
+
 def _apply_deletion(
     para: etree._Element,
     slot_s: int,
@@ -669,6 +713,10 @@ class TracksMixin:
         slot_s, slot_e, slots = _resolve(
             doc, para, text, context_before, context_after, ignore_case=ignore_case
         )
+        # Same defect class as replace_text: deleting inside an unresolved
+        # w:ins is unsupported, so fail with the actionable message first
+        # (the untracked path would otherwise silently unwrap an insertion).
+        _preflight_deletion(para_id, slot_s, slot_e, slots)
         if tracked:
             _apply_deletion(para, slot_s, slot_e, slots, cid, author, now)
         else:
@@ -727,6 +775,9 @@ class TracksMixin:
                 "author": author,
                 "date": _now_iso(),
             }  # noqa: E501
+
+        if del_text:
+            _preflight_deletion(para_id, real_slot_s, real_slot_e, slots)
 
         cid = self._next_markup_id(doc)
         now = _now_iso()
