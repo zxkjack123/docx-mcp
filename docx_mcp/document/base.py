@@ -278,6 +278,25 @@ class BaseMixin:
 
     # ── Pre-save auto-repair ─────────────────────────────────────────────────
 
+    # Word's structural notes are not referenced by body text but must exist.
+    _STRUCTURAL_NOTE_TYPES = frozenset({"separator", "continuationSeparator", "continuationNotice"})
+
+    @classmethod
+    def _is_structural_note(cls, note: etree._Element) -> bool:
+        """Return whether a note uses a known Word structural-note type."""
+        return note.get(f"{W}type") in cls._STRUCTURAL_NOTE_TYPES
+
+    def _settings_note_ids(self, kind: str) -> set[str]:
+        """Return note ids pinned by word/settings.xml note properties."""
+        settings = self._tree("word/settings.xml")
+        if settings is None:
+            return set()
+        return {
+            n.get(f"{W}id")
+            for pr in settings.iter(f"{W}{kind}Pr")
+            for n in pr.findall(f"{W}{kind}")
+        }
+
     def _pre_save_repair(self) -> dict:
         """Auto-repair known corruption patterns before writing.
 
@@ -300,9 +319,15 @@ class BaseMixin:
         fn_tree = self._tree("word/footnotes.xml")
         if fn_tree is not None and body is not None:
             ref_ids = {int(ref.get(f"{W}id", "0")) for ref in body.iter(f"{W}footnoteReference")}
+            pinned = self._settings_note_ids("footnote")
             for fn in list(fn_tree.findall(f"{W}footnote")):
                 fn_id = int(fn.get(f"{W}id", "0"))
-                if fn_id >= 2 and fn_id not in ref_ids:
+                if (
+                    fn_id >= 2
+                    and fn_id not in ref_ids
+                    and not self._is_structural_note(fn)
+                    and str(fn_id) not in pinned
+                ):
                     fn_tree.remove(fn)
                     repairs["orphan_footnotes_removed"] += 1
             if repairs["orphan_footnotes_removed"]:
@@ -312,12 +337,15 @@ class BaseMixin:
         en_tree = self._tree("word/endnotes.xml")
         if en_tree is not None and body is not None:
             ref_ids = {int(ref.get(f"{W}id", "0")) for ref in body.iter(f"{W}endnoteReference")}
+            pinned = self._settings_note_ids("endnote")
             for en in list(en_tree.findall(f"{W}endnote")):
-                en_id_str = en.get(f"{W}id", "0")
-                if en_id_str in ("0", "-1"):
-                    continue
-                en_id = int(en_id_str)
-                if en_id not in ref_ids:
+                en_id = int(en.get(f"{W}id", "0"))
+                if (
+                    en_id not in (0, -1)
+                    and en_id not in ref_ids
+                    and not self._is_structural_note(en)
+                    and str(en_id) not in pinned
+                ):
                     en_tree.remove(en)
                     repairs["orphan_endnotes_removed"] += 1
             if repairs["orphan_endnotes_removed"]:
