@@ -20,6 +20,7 @@ import json
 import zipfile
 from pathlib import Path
 
+import pytest
 from lxml import etree
 
 from docx_mcp import server
@@ -45,6 +46,39 @@ def _write_docx(path: Path, paragraphs: list[str]) -> None:
         '    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"\n'
         '    xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">\n'
         "  <w:body>\n" + paras + "  </w:body>\n</w:document>"
+    )
+    ct = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'  # noqa: E501
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml"'
+        ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'  # noqa: E501
+        "</Types>"
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1"'
+        ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"'
+        ' Target="word/document.xml"/>'
+        "</Relationships>"
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", ct)
+        zf.writestr("_rels/.rels", rels)
+        zf.writestr("word/document.xml", doc_xml)
+
+
+def _write_docx_rich(path: Path, body_xml: str) -> None:
+    """Write a DOCX whose body is the supplied raw XML (for non-text structures)."""
+    doc_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        "<w:document\n"
+        '    xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"\n'
+        '    xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"\n'
+        '    xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">\n'
+        "  <w:body>\n" + body_xml + "  </w:body>\n</w:document>"
     )
     ct = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -204,3 +238,62 @@ class TestCompareDocuments:
         result = _j(server.compare_documents(str(base), str(revised), ""))
         assert "path" in result
         assert Path(result["path"]).exists()
+
+    # ── Non-text structures: fail closed instead of silently dropping them ────
+
+    def test_rejects_table_in_base(self, tmp_path: Path):
+        """A table would be dropped by the text-only diff, so the call must fail."""
+        base = tmp_path / "base.docx"
+        revised = tmp_path / "revised.docx"
+        out = tmp_path / "out.docx"
+        _write_docx_rich(
+            base,
+            "    <w:p><w:r><w:t>Before table.</w:t></w:r></w:p>\n"
+            "    <w:tbl><w:tr><w:tc><w:p><w:r><w:t>cell</w:t></w:r></w:p>"
+            "</w:tc></w:tr></w:tbl>\n",
+        )
+        _write_docx(revised, ["Before table."])
+        with pytest.raises(ValueError, match="table"):
+            server.compare_documents(str(base), str(revised), str(out))
+        assert not out.exists(), "no half-baked diff may be written"
+
+    def test_rejects_inline_drawing_in_revised(self, tmp_path: Path):
+        """An inline image cannot be represented by the text diff."""
+        base = tmp_path / "base.docx"
+        revised = tmp_path / "revised.docx"
+        out = tmp_path / "out.docx"
+        _write_docx(base, ["Figure follows."])
+        _write_docx_rich(
+            revised,
+            "    <w:p><w:r><w:t>Figure follows.</w:t></w:r><w:r><w:drawing/></w:r></w:p>\n",
+        )
+        with pytest.raises(ValueError, match="drawing|image"):
+            server.compare_documents(str(base), str(revised), str(out))
+        assert not out.exists()
+
+    def test_rejects_equation_in_base(self, tmp_path: Path):
+        """OMML equations are dropped by the text diff, so refuse them."""
+        base = tmp_path / "base.docx"
+        revised = tmp_path / "revised.docx"
+        out = tmp_path / "out.docx"
+        _write_docx_rich(
+            base,
+            "    <w:p><m:oMath><m:r><m:t>E=mc^2</m:t></m:r></m:oMath></w:p>\n",
+        )
+        _write_docx(revised, ["E=mc^2"])
+        with pytest.raises(ValueError, match="equation"):
+            server.compare_documents(str(base), str(revised), str(out))
+        assert not out.exists()
+
+    def test_rejection_names_the_offending_file(self, tmp_path: Path):
+        """The error should say which input carries the unsupported structure."""
+        base = tmp_path / "base.docx"
+        revised = tmp_path / "revised.docx"
+        out = tmp_path / "out.docx"
+        _write_docx(base, ["Only text."])
+        _write_docx_rich(
+            revised,
+            "    <w:p><w:r><w:drawing/></w:r></w:p>\n",
+        )
+        with pytest.raises(ValueError, match="revised"):
+            server.compare_documents(str(base), str(revised), str(out))

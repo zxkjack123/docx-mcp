@@ -32,6 +32,43 @@ def _body_paragraphs(root: etree._Element) -> list[etree._Element]:
     return [el for el in body if el.tag == _wt("p")]
 
 
+# Structures this paragraph-text diff cannot represent. Producing a diff while
+# they are present would silently drop them, so compare_documents fails closed.
+_M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+_UNSUPPORTED_STRUCTURES: tuple[tuple[str, str], ...] = (
+    (_wt("tbl"), "table"),
+    (_wt("drawing"), "drawing/image"),
+    (_wt("pict"), "drawing/image"),
+    (_wt("object"), "embedded object"),
+    (f"{{{_M}}}oMath", "equation"),
+    (f"{{{_M}}}oMathPara", "equation"),
+)
+
+
+def _unsupported_structures(root: etree._Element) -> list[str]:
+    """Return labels for non-text structures that a text-only diff would drop."""
+    found: list[str] = []
+    for tag, label in _UNSUPPORTED_STRUCTURES:
+        if label not in found and next(root.iter(tag), None) is not None:
+            found.append(label)
+    return found
+
+
+def _reject_unsupported(base_root: etree._Element, rev_root: etree._Element) -> None:
+    """Raise ValueError when either input has content the diff cannot preserve."""
+    problems = [
+        f"{label} (in {name})"
+        for name, root in (("base", base_root), ("revised", rev_root))
+        for label in _unsupported_structures(root)
+    ]
+    if problems:
+        raise ValueError(
+            "compare_documents diffs paragraph text only and would silently drop "
+            f"non-text content: {', '.join(problems)}. Convert or remove those "
+            "structures first, or diff the text separately. No output file was written."
+        )
+
+
 def _para_text(para: etree._Element) -> str:
     parts: list[str] = []
     for t in para.iter(_wt("t")):
@@ -233,6 +270,7 @@ class CompareMixin:
 
         base_root = _parse_doc_root(base_path)
         rev_root = _parse_doc_root(revised_path)
+        _reject_unsupported(base_root, rev_root)
 
         base_paras = _body_paragraphs(base_root)
         rev_paras = _body_paragraphs(rev_root)
