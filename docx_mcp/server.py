@@ -1371,21 +1371,25 @@ def reject_change(change_id: int) -> str:
 
 
 @mcp.tool()
-def accept_all_changes() -> str:
+def accept_all_changes(document_handle: str = "") -> str:
     """Accept all tracked changes in document order.
 
     Returns a JSON object with the count of accepted changes: {"accepted": int}.
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().accept_all_changes())
+    return _js(_resolve(document_handle)[1].accept_all_changes())
 
 
 @mcp.tool()
-def reject_all_changes() -> str:
+def reject_all_changes(document_handle: str = "") -> str:
     """Reject all tracked changes in document order.
 
     Returns a JSON object with the count of rejected changes: {"rejected": int}.
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().reject_all_changes())
+    return _js(_resolve(document_handle)[1].reject_all_changes())
 
 
 @mcp.tool()
@@ -1561,6 +1565,7 @@ def sanitize_metadata(
     output_path: str,
     level: int = 1,
     redact_authors_as: str = "",
+    document_handle: str = "",
 ) -> str:
     """Write a sanitized copy of the open document to output_path.
 
@@ -1574,9 +1579,11 @@ def sanitize_metadata(
         output_path: Destination path for the sanitized DOCX. Must be non-empty.
         level: Sanitization depth (1, 2, or 3). Default 1.
         redact_authors_as: Replacement author string for level 2+. Default "Anonymous".
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().sanitize_metadata(
+        _resolve(document_handle)[1].sanitize_metadata(
             output_path,
             level=level,
             redact_authors_as=redact_authors_as,
@@ -2772,6 +2779,7 @@ def find_replace_formatted(
     italic: bool | None = None,
     color: str | None = None,
     size_pt: float | None = None,
+    document_handle: str = "",
 ) -> str:
     """Find all occurrences of a string and replace with formatted text.
 
@@ -2786,9 +2794,11 @@ def find_replace_formatted(
         italic: True to italicise, False to explicitly un-italicise, None to leave unchanged.
         color: Font color as 6-digit hex (e.g. "FF0000"). None leaves color unchanged.
         size_pt: Font size in points (e.g. 12.0). None leaves size unchanged.
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().find_replace_formatted(
+        _resolve(document_handle)[1].find_replace_formatted(
             find,
             replace,
             bold=bold,
@@ -2834,7 +2844,7 @@ def get_statistics() -> str:
 
 
 @mcp.tool()
-def get_document_outline(max_level: int = 6) -> str:
+def get_document_outline(max_level: int = 6, document_handle: str = "") -> str:
     """Return a flat list of headings as a document outline.
 
     Walks the document body and returns every heading paragraph up to the
@@ -2845,8 +2855,10 @@ def get_document_outline(max_level: int = 6) -> str:
 
     Returns:
         JSON list of dicts with keys: level (int), text (str), para_id (str).
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_document_outline(max_level=max_level))
+    return _js(_resolve(document_handle)[1].get_document_outline(max_level=max_level))
 
 
 @mcp.tool()
@@ -2990,7 +3002,7 @@ def copy_document(output_path: str, document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def convert_to_pdf(output_path: str) -> str:
+def convert_to_pdf(output_path: str, document_handle: str = "") -> str:
     """Convert the open document to PDF using LibreOffice headless.
 
     Requires LibreOffice to be installed ('libreoffice' or 'soffice' on PATH).
@@ -3000,8 +3012,10 @@ def convert_to_pdf(output_path: str) -> str:
 
     Returns:
         {"pdf_path": str}
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().convert_to_pdf(output_path))
+    return _js(_resolve(document_handle)[1].convert_to_pdf(output_path))
 
 
 @mcp.tool()
