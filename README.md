@@ -341,6 +341,7 @@ Every edit is validated against the OOXML specification before saving, catching 
 ## Requirements
 
 - Python 3.10+
+- MCP Python SDK `mcp>=2,<3` (installed automatically by `uvx docx-mcp-server` / `pip install docx-mcp-server`)
 - Works on macOS, Linux, and Windows
 
 ---
