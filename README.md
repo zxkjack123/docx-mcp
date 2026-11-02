@@ -295,6 +295,8 @@ Every edit is validated against the OOXML specification before saving, catching 
 | `add_endnote` | Add an endnote with superscript reference |
 | `validate_endnotes` | Validate endnote cross-references |
 
+`save_document` runs a pre-save auto-repair pass that removes unreferenced **orphan** footnotes and endnotes. Two classes of notes are deliberately retained: Word's structural note types — `separator`, `continuationSeparator`, and `continuationNotice` — and any note id **pinned** from `word/settings.xml` (`w:footnotePr` / `w:endnotePr`). A note is removed only when it is *not* a recognized structural type, *not* pinned in `settings.xml`, and unreferenced by the body (`w:footnoteReference` / `w:endnoteReference`). A note with an **unknown** type that is also unreferenced is therefore still an orphan and is deleted — the retention guarantees above cover only the structural types and the pinned ids.
+
 ### Headers, Footers & Styles
 
 | Tool | Description |
