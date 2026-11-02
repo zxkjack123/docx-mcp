@@ -112,3 +112,48 @@
 
 - 本审阅为**静态代码分析**，未执行运行时重现。
 - 仅限于路线图提到的范围；未对 `_require_doc()` 与 `_resolve(handle)` 使用模式进行全库审计。
+
+---
+
+## 状态更新（2026-11-02 复核）
+
+> 依据当前 `HEAD` 的代码与 git 证据重测，覆盖上文 ②③④⑤ 各表条目。**不盲信过期 PM 状态**。
+
+### 状态表
+
+| 原 ID | 现状 | 证据（commit / 符号锚） |
+|-------|------|------------------------|
+| INC-01 | ⬜ OPEN | `compare.py::_body_paragraphs` 仅提取 `w:p`（Bug 2 未修复） |
+| INC-02 | ✅ FIXED | `formatting.py::update_paragraph` 已含 `tracked`/`author`；commit `71438c8`（合入 `3a944d0`） |
+| INC-03 | 🟡 PARTIAL | 多数工具已可传 handle，仍有 6 个缺失（见下） |
+| CQ-01 | ✅ FIXED | `tracks.py::_resolve` 已移除文档级唯一性守卫；commit `6d393a5`（合入 `f5face8`） |
+| CQ-02 | ⬜ OPEN | 同 INC-01 |
+| CQ-03 | ✅ FIXED | `server.py::copy_document` 已含 `document_handle`；commit `8fb3fa0`（合入 `5b362d8`） |
+| CQ-04 | ✅ FIXED | 同 INC-02 |
+| CQ-05 | 🟡 PARTIAL | 同 INC-03 |
+| BUG-01 | ✅ FIXED | 同 CQ-01 |
+| BUG-02 | ⬜ OPEN | 同 INC-01 |
+| BUG-03 | ✅ FIXED | `server.py::update_image` 已含 `document_handle`；commit `8fb3fa0` |
+| OPT-01 | ⬜ OPEN | `docx_mcp/**` 中 `sanitize_level` 零命中 |
+| OPT-02 | ⬜ OPEN | `docx_mcp/**` 中 `replace_all` 零命中 |
+| OPT-03 | ⬜ OPEN | `docx_mcp/**` 中 `extract_image` 零命中 |
+
+### 行号漂移说明
+
+原报告 ①–⑤ 及「修复路线图」章节引用的**行号已全部失效**，复核时禁止沿用：
+
+- `tracks.py:289` → `tracks.py::_resolve`
+- `compare.py:28-32` / `compare.py:28-289` → `compare.py::_body_paragraphs`
+- `formatting.py:140` → `formatting.py::update_paragraph`
+- `server.py:2937`（`copy_document`）→ `server.py::copy_document`
+- `server.py:2952`（`convert_to_pdf`）→ `server.py::convert_to_pdf`
+- 其余（`server.py:2310-2328`、`server.py:1342/1351/1528/2730/2799`、`reading.py:146`、`tracks.py:692`）同样按符号锚重定位。
+
+### Feature 2 勘误（当前事实修正）
+
+原「Feature 2 勘误」表按 2026-07-27 代码判定；其中 `copy_document` / `update_image` 两条当时标为「缺失」者**已于 `8fb3fa0` 补齐 handle**：
+
+- **已支持 handle**：`accept_changes`、`reject_changes`、`generate_change_summary`（原表已确认）**+ `copy_document`、`update_image`**（原表未列，现已支持）。
+- **仍缺 handle（6 个）**：`accept_all_changes`、`reject_all_changes`、`sanitize_metadata`、`find_replace_formatted`、`get_document_outline`、`convert_to_pdf`。
+
+> 备注：`convert_to_pdf` 仍无 handle，故在 singleton 模式（`DOCX_MCP_REQUIRE_HANDLE=1`）下当前不可用——该限制已写入 `README.md` 的 `### PDF Export` 小节。
