@@ -353,6 +353,8 @@ Every edit is validated against the OOXML specification before saving, catching 
 3. numeric but ≤ 0 (non-positive) → 90 s;
 4. any positive number → that value, in seconds.
 
+**Edge cases** — `NaN` falls back to 90 s; positive infinity (`inf`) is currently accepted by the parser (it is `> 0`) but is **not** a supported or recommended timeout and may fail in subprocess/platform handling — use a finite positive timeout below the client limit.
+
 **Why 90 s** — it must stay clearly below the deployment-side client hard cap (`mcp.timeout.execution` = 120000 ms = 120 s); otherwise the client gives up first and the hang never surfaces as an explicit error.
 
 **Failure behaviour** — on timeout the tool raises `RuntimeError: LibreOffice conversion timed out after Ns (set DOCX_MCP_PDF_TIMEOUT to change the limit).`; a non-zero exit raises a `RuntimeError` that includes the exit code and LibreOffice's stderr.
