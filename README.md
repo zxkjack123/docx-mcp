@@ -340,6 +340,25 @@ Every edit is validated against the OOXML specification before saving, catching 
 
 </details>
 
+### PDF Export
+
+`convert_to_pdf` renders the open document to PDF with a headless LibreOffice subprocess.
+
+**Prerequisites** — LibreOffice must be installed locally, and either `libreoffice` or `soffice` must be on `PATH` (`shutil.which` prefers `libreoffice` and falls back to `soffice`). If neither is found the tool raises `RuntimeError: LibreOffice not found. Install it and ensure 'libreoffice' or 'soffice' is on PATH.`
+
+**Timeout** — the default conversion timeout is **90 seconds** (`DEFAULT_TIMEOUT = 90.0`). Override it with the `DOCX_MCP_PDF_TIMEOUT` environment variable; parsing is strict:
+
+1. unset or empty → 90 s;
+2. non-numeric (i.e. `float()` raises `ValueError`) → 90 s;
+3. numeric but ≤ 0 (non-positive) → 90 s;
+4. any positive number → that value, in seconds.
+
+**Why 90 s** — it must stay clearly below the deployment-side client hard cap (`mcp.timeout.execution` = 120000 ms = 120 s); otherwise the client gives up first and the hang never surfaces as an explicit error.
+
+**Failure behaviour** — on timeout the tool raises `RuntimeError: LibreOffice conversion timed out after Ns (set DOCX_MCP_PDF_TIMEOUT to change the limit).`; a non-zero exit raises a `RuntimeError` that includes the exit code and LibreOffice's stderr.
+
+**Singleton limitation** — `convert_to_pdf` accepts no document_handle parameter and always operates on the shared `__default__` slot. When singleton mode is enabled via `DOCX_MCP_REQUIRE_HANDLE=1`, that slot is disabled, so the tool is **currently unavailable** and raises `RuntimeError: document_handle is required in singleton mode ...`. For multi-session isolation, call `save_document(output_path=..., document_handle=...)` and convert the saved DOCX yourself.
+
 ## Requirements
 
 - Python 3.10+
