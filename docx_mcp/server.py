@@ -1986,7 +1986,7 @@ def add_hyperlink(para_id: str, text: str, url: str, document_handle: str = "") 
 
 
 @mcp.tool()
-def add_internal_link(para_id: str, text: str, bookmark: str) -> str:
+def add_internal_link(para_id: str, text: str, bookmark: str, document_handle: str = "") -> str:
     """Append an internal anchor hyperlink (w:anchor) at the end of a paragraph.
 
     Internal links reference bookmarks by name and do NOT add a relationship.
@@ -1995,12 +1995,15 @@ def add_internal_link(para_id: str, text: str, bookmark: str) -> str:
         para_id: w14:paraId of the target paragraph.
         text: Display text for the hyperlink.
         bookmark: Name of the bookmark to link to.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().add_internal_link(para_id, text, bookmark))
+    return _js(_resolve(document_handle)[1].add_internal_link(para_id, text, bookmark))
 
 
 @mcp.tool()
-def remove_hyperlink(para_id: str, url_or_anchor: str) -> str:
+def remove_hyperlink(para_id: str, url_or_anchor: str, document_handle: str = "") -> str:
     """Remove a hyperlink wrapper, preserving the text runs inside.
 
     The paragraph text remains; only the w:hyperlink element is unwrapped.
@@ -2008,26 +2011,34 @@ def remove_hyperlink(para_id: str, url_or_anchor: str) -> str:
     Args:
         para_id: w14:paraId of the paragraph containing the hyperlink.
         url_or_anchor: URL (for external) or bookmark name (for internal) to match.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().remove_hyperlink(para_id, url_or_anchor))
+    return _js(_resolve(document_handle)[1].remove_hyperlink(para_id, url_or_anchor))
 
 
 @mcp.tool()
-def update_hyperlink(r_id: str, new_url: str) -> str:
+def update_hyperlink(r_id: str, new_url: str, document_handle: str = "") -> str:
     """Update the target URL of an existing external hyperlink relationship.
 
     Args:
         r_id: The relationship ID (e.g. "rId7") to update.
         new_url: The new target URL.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().update_hyperlink(r_id, new_url))
+    return _js(_resolve(document_handle)[1].update_hyperlink(r_id, new_url))
 
 
 # ── Fields ──────────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def add_field(para_id: str, field_code: str, cached_value: str = "") -> str:
+def add_field(
+    para_id: str, field_code: str, cached_value: str = "", document_handle: str = ""
+) -> str:
     """Insert a Word field at end of paragraph.
 
     Common field codes: PAGE, NUMPAGES, DATE, SEQ Figure, REF MyBookmark,
@@ -2037,61 +2048,84 @@ def add_field(para_id: str, field_code: str, cached_value: str = "") -> str:
         para_id: w14:paraId of the target paragraph.
         field_code: The field instruction text (e.g. "PAGE").
         cached_value: Optional display text cached in the document.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().add_field(para_id, field_code, cached_value))
+    return _js(_resolve(document_handle)[1].add_field(para_id, field_code, cached_value))
 
 
 @mcp.tool()
-def update_fields() -> str:
-    """Mark all fields as dirty so Word recalculates on open."""
-    return _js(_require_doc().update_fields())
+def update_fields(document_handle: str = "") -> str:
+    """Mark all fields as dirty so Word recalculates on open.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].update_fields())
 
 
 @mcp.tool()
-def list_fields() -> str:
-    """List all fields in the document with their codes and cached values."""
-    return _js(_require_doc().list_fields())
+def list_fields(document_handle: str = "") -> str:
+    """List all fields in the document with their codes and cached values.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].list_fields())
 
 
 @mcp.tool()
-def get_field(field_id: str) -> str:
+def get_field(field_id: str, document_handle: str = "") -> str:
     """Return details of a single field by field_id.
 
     Args:
         field_id: Positional identifier returned by list_fields (e.g. "field_0").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_field(field_id))
+    return _js(_resolve(document_handle)[1].get_field(field_id))
 
 
 @mcp.tool()
-def delete_field(field_id: str) -> str:
+def delete_field(field_id: str, document_handle: str = "") -> str:
     """Remove a complete complex field (begin through end runs) from the document.
 
     Args:
         field_id: Positional identifier returned by list_fields (e.g. "field_0").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_field(field_id))
+    return _js(_resolve(document_handle)[1].delete_field(field_id))
 
 
 @mcp.tool()
-def insert_date_field(para_id: str, date_format: str = r'\@ "MMMM d, yyyy"') -> str:
+def insert_date_field(
+    para_id: str, date_format: str = r'\@ "MMMM d, yyyy"', document_handle: str = ""
+) -> str:
     """Insert a DATE field at the end of a paragraph.
 
     Args:
         para_id: w14:paraId of the target paragraph.
         date_format: Date picture switch (default: \\@ "MMMM d, yyyy").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_date_field(para_id, date_format))
+    return _js(_resolve(document_handle)[1].insert_date_field(para_id, date_format))
 
 
 @mcp.tool()
-def insert_page_number_field(para_id: str) -> str:
+def insert_page_number_field(para_id: str, document_handle: str = "") -> str:
     """Insert a PAGE field at the end of a paragraph.
 
     Args:
         para_id: w14:paraId of the target paragraph.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_page_number_field(para_id))
+    return _js(_resolve(document_handle)[1].insert_page_number_field(para_id))
 
 
 @mcp.tool()
@@ -2100,6 +2134,7 @@ def insert_if_field(
     condition: str,
     true_text: str,
     false_text: str,
+    document_handle: str = "",
 ) -> str:
     """Insert a Word IF conditional field at the end of a paragraph.
 
@@ -2108,8 +2143,13 @@ def insert_if_field(
         condition: The condition expression (e.g. "x > 0").
         true_text: Text to display when condition is true.
         false_text: Text to display when condition is false.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_if_field(para_id, condition, true_text, false_text))
+    return _js(
+        _resolve(document_handle)[1].insert_if_field(para_id, condition, true_text, false_text)
+    )
 
 
 @mcp.tool()
@@ -2117,6 +2157,7 @@ def insert_sequence_field(
     para_id: str,
     seq_name: str,
     reset: bool = False,
+    document_handle: str = "",
 ) -> str:
     """Insert a SEQ (sequence) field for figure/table numbering.
 
@@ -2124,69 +2165,95 @@ def insert_sequence_field(
         para_id: w14:paraId of the target paragraph.
         seq_name: The sequence identifier (e.g. "Figure", "Table").
         reset: If True, restarts the sequence counter at 1.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_sequence_field(para_id, seq_name, reset))
+    return _js(_resolve(document_handle)[1].insert_sequence_field(para_id, seq_name, reset))
 
 
 @mcp.tool()
-def insert_merge_field(para_id: str, field_name: str) -> str:
+def insert_merge_field(para_id: str, field_name: str, document_handle: str = "") -> str:
     """Insert a MERGEFIELD (mail merge) field at the end of a paragraph.
 
     Args:
         para_id: w14:paraId of the target paragraph.
         field_name: The merge field name (e.g. "FirstName").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_merge_field(para_id, field_name))
+    return _js(_resolve(document_handle)[1].insert_merge_field(para_id, field_name))
 
 
 # ── Table of Contents ────────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def generate_toc(max_level: int = 3, title: str = "Table of Contents") -> str:
-    """Generate a Table of Contents from document headings."""
-    doc = _require_doc()
+def generate_toc(
+    max_level: int = 3, title: str = "Table of Contents", document_handle: str = ""
+) -> str:
+    """Generate a Table of Contents from document headings.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_toc(max_level, title))
 
 
 @mcp.tool()
-def update_toc() -> str:
-    """Regenerate ToC entries from current headings."""
-    doc = _require_doc()
+def update_toc(document_handle: str = "") -> str:
+    """Regenerate ToC entries from current headings.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.update_toc())
 
 
 @mcp.tool()
-def generate_list_of_figures() -> str:
-    """Insert a List of Figures field (requires SEQ Figure captions)."""
-    doc = _require_doc()
+def generate_list_of_figures(document_handle: str = "") -> str:
+    """Insert a List of Figures field (requires SEQ Figure captions).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_list_of_figures())
 
 
 @mcp.tool()
-def generate_list_of_tables() -> str:
-    """Insert a List of Tables field (requires SEQ Table captions)."""
-    doc = _require_doc()
+def generate_list_of_tables(document_handle: str = "") -> str:
+    """Insert a List of Tables field (requires SEQ Table captions).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_list_of_tables())
 
 
 @mcp.tool()
-def generate_tof(para_id: str, title: str = "List of Figures") -> str:
+def generate_tof(para_id: str, title: str = "List of Figures", document_handle: str = "") -> str:
     """Insert a Table of Figures field block after the paragraph with para_id.
 
     Collects caption-styled paragraphs starting with 'Figure' as entries.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_tof(para_id, title))
 
 
 @mcp.tool()
-def generate_tot(para_id: str, title: str = "List of Tables") -> str:
+def generate_tot(para_id: str, title: str = "List of Tables", document_handle: str = "") -> str:
     """Insert a Table of Tables field block after the paragraph with para_id.
 
     Collects caption-styled paragraphs starting with 'Table' as entries.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_tot(para_id, title))
 
 
@@ -2201,6 +2268,7 @@ def add_content_control(
     label: str = "",
     options: list[str] | None = None,
     default: str = "",
+    document_handle: str = "",
 ) -> str:
     """Wrap a paragraph in an SDT content control.
 
@@ -2211,61 +2279,79 @@ def add_content_control(
         label: Optional display label (w:alias).
         options: List of option strings for dropdown controls.
         default: Default display text (or date string for date controls).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.add_content_control(para_id, tag, control_type, label, options, default))
 
 
 @mcp.tool()
-def get_content_controls() -> str:
-    """List all SDT content controls in the document."""
-    doc = _require_doc()
+def get_content_controls(document_handle: str = "") -> str:
+    """List all SDT content controls in the document.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.get_content_controls())
 
 
 @mcp.tool()
-def set_content_control_value(tag: str, value: str) -> str:
+def set_content_control_value(tag: str, value: str, document_handle: str = "") -> str:
     """Update the value/text of a content control by its tag.
 
     Args:
         tag: Tag name of the control to update.
         value: New value. For checkbox: 'true'/'1' = checked, 'false'/'0' = unchecked.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.set_content_control_value(tag, value))
 
 
 @mcp.tool()
-def lock_content_control(tag: str, lock: str = "sdtLocked") -> str:
+def lock_content_control(tag: str, lock: str = "sdtLocked", document_handle: str = "") -> str:
     """Lock a content control to prevent editing.
 
     Args:
         tag: Tag name of the control to lock.
         lock: Lock type — sdtLocked|contentLocked|sdtContentLocked.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.lock_content_control(tag, lock))
 
 
 @mcp.tool()
-def delete_content_control(control_id: str) -> str:
+def delete_content_control(control_id: str, document_handle: str = "") -> str:
     """Remove an SDT content control wrapper, keeping its content in place.
 
     Args:
         control_id: The w:id value of the content control to unwrap.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.delete_content_control(control_id))
 
 
 @mcp.tool()
-def get_content_control(control_id: str) -> str:
+def get_content_control(control_id: str, document_handle: str = "") -> str:
     """Return details of a single content control by its w:id.
 
     Args:
         control_id: The w:id value of the content control to retrieve.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.get_content_control(control_id))
 
 
@@ -2275,6 +2361,7 @@ def update_content_control(
     title: str | None = None,
     tag: str | None = None,
     placeholder_text: str | None = None,
+    document_handle: str = "",
 ) -> str:
     """Modify properties of an existing content control.
 
@@ -2283,8 +2370,11 @@ def update_content_control(
         title: New title (w:alias/@w:val). Omit to leave unchanged.
         tag: New tag (w:tag/@w:val). Omit to leave unchanged.
         placeholder_text: New placeholder text. Omit to leave unchanged.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(
         doc.update_content_control(
             control_id, title=title, tag=tag, placeholder_text=placeholder_text
@@ -2296,28 +2386,39 @@ def update_content_control(
 
 
 @mcp.tool()
-def fill_template(data: dict[str, str | list[str]], remove_empty: bool = False) -> str:
+def fill_template(
+    data: dict[str, str | list[str]], remove_empty: bool = False, document_handle: str = ""
+) -> str:
     """Fill SDT content controls from data dict. Keys match w:tag values.
 
     Args:
         data: Mapping of tag names to values. Use list[str] for repeating sections.
         remove_empty: If True, remove SDTs with no matching key in data.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.fill_template(data, remove_empty))
 
 
 @mcp.tool()
-def list_template_fields() -> str:
-    """List all SDT template fields (tag, label, type) in the document."""
-    doc = _require_doc()
+def list_template_fields(document_handle: str = "") -> str:
+    """List all SDT template fields (tag, label, type) in the document.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.list_template_fields())
 
 
 @mcp.tool()
-def validate_template_data(data: dict) -> str:
-    """Validate data dict covers all template fields. Returns missing and extra keys."""
-    doc = _require_doc()
+def validate_template_data(data: dict, document_handle: str = "") -> str:
+    """Validate data dict covers all template fields. Returns missing and extra keys.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.validate_template_data(data))
 
 
@@ -2325,9 +2426,12 @@ def validate_template_data(data: dict) -> str:
 
 
 @mcp.tool()
-def create_multilevel_list(name: str, levels: list[dict]) -> str:
-    """Create a multilevel list in numbering.xml. Each level dict: {num_fmt, lvl_text, indent, hanging, style?}."""  # noqa: E501
-    doc = _require_doc()
+def create_multilevel_list(name: str, levels: list[dict], document_handle: str = "") -> str:
+    """Create a multilevel list in numbering.xml. Each level dict: {num_fmt, lvl_text, indent, hanging, style?}.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""  # noqa: E501
+    doc = _resolve(document_handle)[1]
     return _js(doc.create_multilevel_list(name, levels))
 
 
