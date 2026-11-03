@@ -2436,45 +2436,62 @@ def create_multilevel_list(name: str, levels: list[dict], document_handle: str =
 
 
 @mcp.tool()
-def restart_numbering(para_id: str, level: int = 0, start: int = 1) -> str:
-    """Restart list numbering at a paragraph. Adds lvlOverride with startOverride."""
-    doc = _require_doc()
+def restart_numbering(
+    para_id: str, level: int = 0, start: int = 1, document_handle: str = ""
+) -> str:
+    """Restart list numbering at a paragraph. Adds lvlOverride with startOverride.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.restart_numbering(para_id, level, start))
 
 
 @mcp.tool()
-def suppress_numbering(para_id: str) -> str:
-    """Remove list numbering from a paragraph by setting numId to 0."""
-    doc = _require_doc()
+def suppress_numbering(para_id: str, document_handle: str = "") -> str:
+    """Remove list numbering from a paragraph by setting numId to 0.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.suppress_numbering(para_id))
 
 
 @mcp.tool()
-def get_lists() -> str:
+def get_lists(document_handle: str = "") -> str:
     """Return all list definitions from numbering.xml.
 
     Each entry: {abstract_num_id, num_format, levels}.
     Returns [] if no numbering.xml exists.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_lists())
+    return _js(_resolve(document_handle)[1].get_lists())
 
 
 @mcp.tool()
-def promote_list_item(para_id: str) -> str:
+def promote_list_item(para_id: str, document_handle: str = "") -> str:
     """Decrease the list indentation level (ilvl) of a paragraph by 1, minimum 0.
 
     Returns {para_id, ilvl}. Raises ValueError if paragraph is not a list item.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().promote_list_item(para_id))
+    return _js(_resolve(document_handle)[1].promote_list_item(para_id))
 
 
 @mcp.tool()
-def demote_list_item(para_id: str) -> str:
+def demote_list_item(para_id: str, document_handle: str = "") -> str:
     """Increase the list indentation level (ilvl) of a paragraph by 1, maximum 8.
 
     Returns {para_id, ilvl}. Raises ValueError if paragraph is not a list item.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().demote_list_item(para_id))
+    return _js(_resolve(document_handle)[1].demote_list_item(para_id))
 
 
 # ── Litigation Tools ────────────────────────────────────────────────────────
@@ -2482,7 +2499,11 @@ def demote_list_item(para_id: str) -> str:
 
 @mcp.tool()
 def bates_number(
-    prefix: str, start: int = 1, digits: int = 6, position: str = "footer-right"
+    prefix: str,
+    start: int = 1,
+    digits: int = 6,
+    position: str = "footer-right",
+    document_handle: str = "",
 ) -> str:  # noqa: E501
     """Add Bates numbering stamp to document footer.
 
@@ -2491,8 +2512,11 @@ def bates_number(
         start: Starting Bates number.
         digits: Zero-padding width for the number.
         position: Hint for stamp position (currently "footer-right").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.bates_number(prefix, start, digits, position))
 
 
@@ -2502,6 +2526,7 @@ def redact_text(
     para_ids: list[str] | None = None,
     exact_text: str | None = None,
     reason: str = "",
+    document_handle: str = "",
 ) -> str:
     """True redaction: remove text and replace with black rectangle. Use exact_text or pattern.
 
@@ -2510,30 +2535,39 @@ def redact_text(
         para_ids: Optional list of paragraph paraId values to limit scope.
         exact_text: Exact string to match against run text.
         reason: Reason for redaction (stored in log).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.redact_text(pattern, para_ids, exact_text, reason))
 
 
 @mcp.tool()
-def generate_redaction_log(output_path: str = "") -> str:
+def generate_redaction_log(output_path: str = "", document_handle: str = "") -> str:
     """Write a DOCX table of all redactions made this session.
 
     Args:
         output_path: Destination path. If empty, writes to a temp file.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_redaction_log(output_path))
 
 
 @mcp.tool()
-def generate_privilege_log(output_path: str = "") -> str:
+def generate_privilege_log(output_path: str = "", document_handle: str = "") -> str:
     """Generate a privilege log DOCX from document metadata.
 
     Args:
         output_path: Destination path. If empty, writes to a temp file.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.generate_privilege_log(output_path))
 
 
@@ -2541,21 +2575,27 @@ def generate_privilege_log(output_path: str = "") -> str:
 
 
 @mcp.tool()
-def add_equation(para_id: str, latex: str) -> str:
+def add_equation(para_id: str, latex: str, document_handle: str = "") -> str:
     """Insert a LaTeX equation as OMML. Requires: pip install latex2mathml.
 
     Args:
         para_id: paraId of the paragraph after which the equation is inserted.
         latex: LaTeX source string (e.g. r"\\frac{1}{2}").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.add_equation(para_id, latex))
 
 
 @mcp.tool()
-def get_equations() -> str:
-    """Return all equations in the document as OMML XML strings."""
-    doc = _require_doc()
+def get_equations(document_handle: str = "") -> str:
+    """Return all equations in the document as OMML XML strings.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.get_equations())
 
 
@@ -2570,12 +2610,16 @@ def insert_bar_chart(
     categories: list[str],
     width_cm: float = 14.0,
     height_cm: float = 9.0,
+    document_handle: str = "",
 ) -> str:
     """Insert a native bar chart (no Excel required).
 
     series: [{"name": str, "values": [float, ...]}]
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.insert_bar_chart(para_id, title, series, categories, width_cm, height_cm))
 
 
@@ -2587,12 +2631,16 @@ def insert_line_chart(
     categories: list[str],
     width_cm: float = 14.0,
     height_cm: float = 9.0,
+    document_handle: str = "",
 ) -> str:
     """Insert a native line chart.
 
     series: [{"name": str, "values": [float, ...]}]
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.insert_line_chart(para_id, title, series, categories, width_cm, height_cm))
 
 
@@ -2602,53 +2650,76 @@ def insert_pie_chart(
     title: str,
     series: list[dict],
     categories: list[str],
+    document_handle: str = "",
 ) -> str:
     """Insert a native pie chart (single series, fixed 14x9 cm).
 
     series: [{"name": str, "values": [float, ...]}]
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.insert_pie_chart(para_id, title, series, categories))
 
 
 @mcp.tool()
-def update_chart_data(chart_id: str, series: list[dict]) -> str:
+def update_chart_data(chart_id: str, series: list[dict], document_handle: str = "") -> str:
     """Replace data series in an existing chart by chart_id.
 
     series: [{"name": str, "values": [float, ...]}]
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    doc = _require_doc()
+    doc = _resolve(document_handle)[1]
     return _js(doc.update_chart_data(chart_id, series))
 
 
 @mcp.tool()
-def merge_review_rounds(reviewer_paths: list[str], base_path: str | None = None) -> str:
-    """Merge tracked changes from N reviewer copies into the open document."""
-    return _js(_require_doc().merge_review_rounds(reviewer_paths, base_path))
+def merge_review_rounds(
+    reviewer_paths: list[str], base_path: str | None = None, document_handle: str = ""
+) -> str:
+    """Merge tracked changes from N reviewer copies into the open document.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].merge_review_rounds(reviewer_paths, base_path))
 
 
 @mcp.tool()
-def compare_contracts(other_path: str, output_path: str = "", align_by: str = "heading") -> str:
-    """Clause-aware diff between the open contract and another .docx file."""
-    return _js(_require_doc().compare_contracts(other_path, output_path, align_by))
+def compare_contracts(
+    other_path: str, output_path: str = "", align_by: str = "heading", document_handle: str = ""
+) -> str:
+    """Clause-aware diff between the open contract and another .docx file.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].compare_contracts(other_path, output_path, align_by))
 
 
 # ── Session log ──────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def get_session_log() -> str:
-    """Return all operations performed this session as replayable JSON."""
-    return _js(_require_doc().get_session_log())
+def get_session_log(document_handle: str = "") -> str:
+    """Return all operations performed this session as replayable JSON.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].get_session_log())
 
 
 @mcp.tool()
-def export_session_script(output_path: str) -> str:
+def export_session_script(output_path: str, document_handle: str = "") -> str:
     """Write session operations as a Python replay script.
 
     Returns: {"output_path": str, "operations": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().export_session_script(output_path))
+    return _js(_resolve(document_handle)[1].export_session_script(output_path))
 
 
 # ── Paragraph CRUD + border/shading ────────────────────────────────────────
@@ -2659,6 +2730,7 @@ def insert_paragraph(
     after_para_id: str,
     text: str,
     style: str = "",
+    document_handle: str = "",
 ) -> str:
     """Insert a new paragraph after the paragraph with the given paraId.
 
@@ -2666,8 +2738,13 @@ def insert_paragraph(
         after_para_id: paraId of the paragraph to insert after.
         text: Text content for the new paragraph.
         style: Optional paragraph style name (e.g., "Heading1", "Normal").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_paragraph(after_para_id, text, style=style or None))
+    return _js(
+        _resolve(document_handle)[1].insert_paragraph(after_para_id, text, style=style or None)
+    )
 
 
 @mcp.tool()
@@ -2677,6 +2754,7 @@ def update_paragraph(
     style: str = "",
     tracked: bool = False,
     author: str = "Claude",
+    document_handle: str = "",
 ) -> str:
     """Update the text and/or style of an existing paragraph.
 
@@ -2686,9 +2764,12 @@ def update_paragraph(
         style: New paragraph style name. Empty string leaves style unchanged.
         tracked: If True, wrap old runs in w:del and new text in w:ins.
         author: Author name shown in Word's review pane (tracked=True only).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().update_paragraph(
+        _resolve(document_handle)[1].update_paragraph(
             para_id,
             text=text or None,
             style=style or None,
@@ -2699,13 +2780,16 @@ def update_paragraph(
 
 
 @mcp.tool()
-def delete_paragraph(para_id: str) -> str:
+def delete_paragraph(para_id: str, document_handle: str = "") -> str:
     """Delete the paragraph with the given paraId.
 
     Args:
         para_id: paraId of the paragraph to remove.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_paragraph(para_id))
+    return _js(_resolve(document_handle)[1].delete_paragraph(para_id))
 
 
 @mcp.tool()
@@ -2714,6 +2798,7 @@ def set_paragraph_border(
     sides: list[str],
     color: str = "000000",
     size: int = 4,
+    document_handle: str = "",
 ) -> str:
     """Set borders on one or more sides of a paragraph.
 
@@ -2722,8 +2807,13 @@ def set_paragraph_border(
         sides: List of sides: "top", "bottom", "left", "right", "between".
         color: Border color as 6-digit hex (default "000000").
         size: Border width in eighths of a point (default 4 = 0.5pt).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_paragraph_border(para_id, sides, color=color, size=size))
+    return _js(
+        _resolve(document_handle)[1].set_paragraph_border(para_id, sides, color=color, size=size)
+    )
 
 
 @mcp.tool()
@@ -2731,6 +2821,7 @@ def set_paragraph_shading(
     para_id: str,
     fill_color: str,
     pattern: str = "clear",
+    document_handle: str = "",
 ) -> str:
     """Set background shading on a paragraph.
 
@@ -2738,8 +2829,13 @@ def set_paragraph_shading(
         para_id: paraId of the target paragraph.
         fill_color: Fill color as 6-digit hex (e.g., "FFFF00").
         pattern: Shading pattern (default "clear").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_paragraph_shading(para_id, fill_color, pattern=pattern))
+    return _js(
+        _resolve(document_handle)[1].set_paragraph_shading(para_id, fill_color, pattern=pattern)
+    )
 
 
 @mcp.tool()
@@ -2749,6 +2845,7 @@ def set_paragraph_indentation(
     right_cm: float | None = None,
     first_line_cm: float | None = None,
     hanging_cm: float | None = None,
+    document_handle: str = "",
 ) -> str:
     """Set indentation on a paragraph.
 
@@ -2758,9 +2855,12 @@ def set_paragraph_indentation(
         right_cm: Right indent in centimetres (None = unchanged).
         first_line_cm: First-line indent in cm (mutually exclusive with hanging_cm).
         hanging_cm: Hanging indent in cm (mutually exclusive with first_line_cm).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().set_paragraph_indentation(
+        _resolve(document_handle)[1].set_paragraph_indentation(
             para_id,
             left_cm=left_cm,
             right_cm=right_cm,
@@ -2771,51 +2871,63 @@ def set_paragraph_indentation(
 
 
 @mcp.tool()
-def set_keep_with_next(para_id: str, enabled: bool) -> str:
+def set_keep_with_next(para_id: str, enabled: bool, document_handle: str = "") -> str:
     """Keep this paragraph on the same page as the next paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         enabled: True to enable keep-with-next, False to remove it.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_keep_with_next(para_id, enabled))
+    return _js(_resolve(document_handle)[1].set_keep_with_next(para_id, enabled))
 
 
 @mcp.tool()
-def set_keep_lines_together(para_id: str, enabled: bool) -> str:
+def set_keep_lines_together(para_id: str, enabled: bool, document_handle: str = "") -> str:
     """Keep all lines of this paragraph on the same page.
 
     Args:
         para_id: paraId of the target paragraph.
         enabled: True to enable keep-lines-together, False to remove it.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_keep_lines_together(para_id, enabled))
+    return _js(_resolve(document_handle)[1].set_keep_lines_together(para_id, enabled))
 
 
 @mcp.tool()
-def set_page_break_before(para_id: str, enabled: bool) -> str:
+def set_page_break_before(para_id: str, enabled: bool, document_handle: str = "") -> str:
     """Force a page break before this paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         enabled: True to force page break before, False to remove it.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_page_break_before(para_id, enabled))
+    return _js(_resolve(document_handle)[1].set_page_break_before(para_id, enabled))
 
 
 @mcp.tool()
-def set_widow_control(para_id: str, enabled: bool) -> str:
+def set_widow_control(para_id: str, enabled: bool, document_handle: str = "") -> str:
     """Enable widow/orphan control for this paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         enabled: True to enable widow control, False to remove it.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_widow_control(para_id, enabled))
+    return _js(_resolve(document_handle)[1].set_widow_control(para_id, enabled))
 
 
 @mcp.tool()
-def insert_blockquote(para_id: str, text: str) -> str:
+def insert_blockquote(para_id: str, text: str, document_handle: str = "") -> str:
     """Insert a blockquote paragraph after the given paragraph.
 
     The new paragraph has 720-twip left indent and italic formatting.
@@ -2823,8 +2935,11 @@ def insert_blockquote(para_id: str, text: str) -> str:
     Args:
         para_id: paraId of the reference paragraph (new para inserted after it).
         text: Text content of the blockquote.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_blockquote(para_id, text))
+    return _js(_resolve(document_handle)[1].insert_blockquote(para_id, text))
 
 
 @mcp.tool()
