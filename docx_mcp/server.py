@@ -358,80 +358,131 @@ def merge_cells(
     start_col: int,
     end_row: int,
     end_col: int,
+    document_handle: str = "",
 ) -> str:
-    """Merge a rectangular range of cells. Horizontal: gridSpan. Vertical: vMerge."""
-    doc = _require_doc()
+    """Merge a rectangular range of cells. Horizontal: gridSpan. Vertical: vMerge.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.merge_cells(table_index, start_row, start_col, end_row, end_col))
 
 
 @mcp.tool()
-def set_header_row(table_index: int) -> str:
-    """Mark the first row as a repeating header row."""
-    doc = _require_doc()
+def set_header_row(table_index: int, document_handle: str = "") -> str:
+    """Mark the first row as a repeating header row.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.set_header_row(table_index))
 
 
 @mcp.tool()
-def set_column_widths(table_index: int, widths_cm: list[float]) -> str:
-    """Set column widths in cm. len(widths_cm) must match column count."""
-    doc = _require_doc()
+def set_column_widths(table_index: int, widths_cm: list[float], document_handle: str = "") -> str:
+    """Set column widths in cm. len(widths_cm) must match column count.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.set_column_widths(table_index, widths_cm))
 
 
 @mcp.tool()
-def csv_to_table(para_id: str, csv_text: str, header_row: bool = True) -> str:
-    """Insert a table from CSV text."""
-    doc = _require_doc()
+def csv_to_table(
+    para_id: str, csv_text: str, header_row: bool = True, document_handle: str = ""
+) -> str:
+    """Insert a table from CSV text.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.csv_to_table(para_id, csv_text, header_row))
 
 
 @mcp.tool()
-def table_to_csv(table_index: int) -> str:
-    """Export a table as CSV string."""
-    doc = _require_doc()
+def table_to_csv(table_index: int, document_handle: str = "") -> str:
+    """Export a table as CSV string.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(doc.table_to_csv(table_index))
 
 
 @mcp.tool()
-def delete_table(table_idx: int) -> str:
-    """Delete a table by index (0-based). Raises IndexError if out of range."""
-    return _js(_require_doc().delete_table(table_idx))
+def delete_table(table_idx: int, document_handle: str = "") -> str:
+    """Delete a table by index (0-based). Raises IndexError if out of range.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].delete_table(table_idx))
 
 
 @mcp.tool()
-def add_column_to_table(table_idx: int, header_text: str = "") -> str:
-    """Add a new column to every row of a table. First row gets header_text."""
-    return _js(_require_doc().add_column_to_table(table_idx, header_text=header_text))
+def add_column_to_table(table_idx: int, header_text: str = "", document_handle: str = "") -> str:
+    """Add a new column to every row of a table. First row gets header_text.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].add_column_to_table(table_idx, header_text=header_text))
 
 
 @mcp.tool()
-def delete_column_from_table(table_idx: int, col_idx: int) -> str:
-    """Delete a column (0-based) from every row of a table."""
-    return _js(_require_doc().delete_column_from_table(table_idx, col_idx))
+def delete_column_from_table(table_idx: int, col_idx: int, document_handle: str = "") -> str:
+    """Delete a column (0-based) from every row of a table.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].delete_column_from_table(table_idx, col_idx))
 
 
 @mcp.tool()
-def set_cell_width(table_idx: int, row_idx: int, col_idx: int, width_mm: float) -> str:
-    """Set the width of a table cell in millimetres (stored as DXA)."""
-    return _js(_require_doc().set_cell_width(table_idx, row_idx, col_idx, width_mm))
+def set_cell_width(
+    table_idx: int, row_idx: int, col_idx: int, width_mm: float, document_handle: str = ""
+) -> str:
+    """Set the width of a table cell in millimetres (stored as DXA).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].set_cell_width(table_idx, row_idx, col_idx, width_mm))
 
 
 @mcp.tool()
-def set_cell_vertical_alignment(table_idx: int, row_idx: int, col_idx: int, alignment: str) -> str:
-    """Set vertical alignment of a table cell: top, center, or bottom."""
-    return _js(_require_doc().set_cell_vertical_alignment(table_idx, row_idx, col_idx, alignment))
+def set_cell_vertical_alignment(
+    table_idx: int, row_idx: int, col_idx: int, alignment: str, document_handle: str = ""
+) -> str:
+    """Set vertical alignment of a table cell: top, center, or bottom.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(
+        _resolve(document_handle)[1].set_cell_vertical_alignment(
+            table_idx, row_idx, col_idx, alignment
+        )
+    )
 
 
 @mcp.tool()
-def set_row_height(table_idx: int, row_idx: int, height_mm: float, rule: str = "exact") -> str:
-    """Set row height in millimetres. rule: exact, atLeast, or auto."""
-    return _js(_require_doc().set_row_height(table_idx, row_idx, height_mm, rule=rule))
+def set_row_height(
+    table_idx: int, row_idx: int, height_mm: float, rule: str = "exact", document_handle: str = ""
+) -> str:
+    """Set row height in millimetres. rule: exact, atLeast, or auto.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(
+        _resolve(document_handle)[1].set_row_height(table_idx, row_idx, height_mm, rule=rule)
+    )
 
 
 @mcp.tool()
-def set_table_alignment(table_idx: int, alignment: str) -> str:
-    """Set table alignment: left, center, or right."""
-    return _js(_require_doc().set_table_alignment(table_idx, alignment))
+def set_table_alignment(table_idx: int, alignment: str, document_handle: str = "") -> str:
+    """Set table alignment: left, center, or right.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].set_table_alignment(table_idx, alignment))
 
 
 @mcp.tool()
@@ -440,10 +491,14 @@ def set_table_borders(
     border_style: str = "single",
     color: str = "000000",
     size: int = 4,
+    document_handle: str = "",
 ) -> str:
-    """Set borders on all six sides of a table (top, bottom, left, right, insideH, insideV)."""
+    """Set borders on all six sides of a table (top, bottom, left, right, insideH, insideV).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
     return _js(
-        _require_doc().set_table_borders(
+        _resolve(document_handle)[1].set_table_borders(
             table_idx, border_style=border_style, color=color, size=size
         )
     )  # noqa: E501
@@ -456,17 +511,26 @@ def set_cell_shading(
     col_idx: int,
     fill_color: str,
     pattern: str = "clear",
+    document_handle: str = "",
 ) -> str:
-    """Set background shading fill color on a table cell."""
+    """Set background shading fill color on a table cell.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
     return _js(
-        _require_doc().set_cell_shading(table_idx, row_idx, col_idx, fill_color, pattern=pattern)
+        _resolve(document_handle)[1].set_cell_shading(
+            table_idx, row_idx, col_idx, fill_color, pattern=pattern
+        )
     )  # noqa: E501
 
 
 @mcp.tool()
-def set_table_style(table_idx: int, style_name: str) -> str:
-    """Apply a named table style (e.g. TableGrid, LightShading-Accent1) to a table."""
-    return _js(_require_doc().set_table_style(table_idx, style_name))
+def set_table_style(table_idx: int, style_name: str, document_handle: str = "") -> str:
+    """Apply a named table style (e.g. TableGrid, LightShading-Accent1) to a table.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].set_table_style(table_idx, style_name))
 
 
 # ── Lists ──────────────────────────────────────────────────────────────────
@@ -499,6 +563,7 @@ def create_style(
     style_type: str,
     based_on: str | None = None,
     next_style: str | None = None,
+    document_handle: str = "",
 ) -> str:
     """Create a new style in the document.
 
@@ -507,9 +572,14 @@ def create_style(
         style_type: "paragraph", "character", "table", or "numbering".
         based_on: Optional styleId this style inherits from.
         next_style: Optional styleId applied to the next paragraph.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().create_style(name, style_type, based_on=based_on, next_style=next_style)
+        _resolve(document_handle)[1].create_style(
+            name, style_type, based_on=based_on, next_style=next_style
+        )
     )  # noqa: E501
 
 
@@ -518,6 +588,7 @@ def update_style(
     name: str,
     based_on: str | None = None,
     next_style: str | None = None,
+    document_handle: str = "",
 ) -> str:
     """Update an existing style's basedOn and/or next properties.
 
@@ -525,22 +596,30 @@ def update_style(
         name: Style name or styleId (case-insensitive).
         based_on: New basedOn styleId (replaces existing).
         next_style: New next styleId (replaces existing).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().update_style(name, based_on=based_on, next_style=next_style))
+    return _js(
+        _resolve(document_handle)[1].update_style(name, based_on=based_on, next_style=next_style)
+    )
 
 
 @mcp.tool()
-def delete_style(name: str) -> str:
+def delete_style(name: str, document_handle: str = "") -> str:
     """Delete a style from the document.
 
     Args:
         name: Style name or styleId (case-insensitive).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_style(name))
+    return _js(_resolve(document_handle)[1].delete_style(name))
 
 
 @mcp.tool()
-def get_style(name_or_id: str) -> str:
+def get_style(name_or_id: str, document_handle: str = "") -> str:
     """Get details of a single style by name or styleId (case-insensitive).
 
     Args:
@@ -548,12 +627,15 @@ def get_style(name_or_id: str) -> str:
 
     Returns:
         {"style_id": str, "name": str, "type": str, "base_style": str, "next_style": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_style(name_or_id))
+    return _js(_resolve(document_handle)[1].get_style(name_or_id))
 
 
 @mcp.tool()
-def copy_style(source_name_or_id: str, new_name: str) -> str:
+def copy_style(source_name_or_id: str, new_name: str, document_handle: str = "") -> str:
     """Deep-copy an existing style under a new name.
 
     Args:
@@ -562,12 +644,17 @@ def copy_style(source_name_or_id: str, new_name: str) -> str:
 
     Returns:
         {"style_id": str, "name": str, "type": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().copy_style(source_name_or_id, new_name))
+    return _js(_resolve(document_handle)[1].copy_style(source_name_or_id, new_name))
 
 
 @mcp.tool()
-def apply_style_to_range(para_ids: list[str], style_name_or_id: str) -> str:
+def apply_style_to_range(
+    para_ids: list[str], style_name_or_id: str, document_handle: str = ""
+) -> str:
     """Apply a style to a list of paragraphs by their paraIds.
 
     Args:
@@ -576,8 +663,11 @@ def apply_style_to_range(para_ids: list[str], style_name_or_id: str) -> str:
 
     Returns:
         {"applied": int, "style_id": str, "para_ids": list[str]}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().apply_style_to_range(para_ids, style_name_or_id))
+    return _js(_resolve(document_handle)[1].apply_style_to_range(para_ids, style_name_or_id))
 
 
 # ── Headers / Footers ──────────────────────────────────────────────────────
@@ -618,15 +708,21 @@ def edit_header_footer(
 
 
 @mcp.tool()
-def delete_header(location: str = "default") -> str:
-    """Delete a header by location: default, first, or even."""
-    return _js(_require_doc().delete_header(location=location))
+def delete_header(location: str = "default", document_handle: str = "") -> str:
+    """Delete a header by location: default, first, or even.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].delete_header(location=location))
 
 
 @mcp.tool()
-def delete_footer(location: str = "default") -> str:
-    """Delete a footer by location: default, first, or even."""
-    return _js(_require_doc().delete_footer(location=location))
+def delete_footer(location: str = "default", document_handle: str = "") -> str:
+    """Delete a footer by location: default, first, or even.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].delete_footer(location=location))
 
 
 # ── Properties ─────────────────────────────────────────────────────────────
@@ -660,31 +756,42 @@ def set_properties(
 
 
 @mcp.tool()
-def get_custom_properties() -> str:
-    """Get custom document properties from docProps/custom.xml."""
-    return _js(_require_doc().get_custom_properties())
+def get_custom_properties(document_handle: str = "") -> str:
+    """Get custom document properties from docProps/custom.xml.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].get_custom_properties())
 
 
 @mcp.tool()
-def set_custom_property(name: str, value: str, vt_type: str = "lpwstr") -> str:
+def set_custom_property(
+    name: str, value: str, vt_type: str = "lpwstr", document_handle: str = ""
+) -> str:
     """Set (upsert) a custom document property.
 
     Args:
         name: Property name.
         value: Property value as a string.
         vt_type: VT type element name (lpwstr, i4, bool, etc.).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_custom_property(name, value, vt_type=vt_type))
+    return _js(_resolve(document_handle)[1].set_custom_property(name, value, vt_type=vt_type))
 
 
 @mcp.tool()
-def delete_custom_property(name: str) -> str:
+def delete_custom_property(name: str, document_handle: str = "") -> str:
     """Delete a custom document property by name.
 
     Args:
         name: Property name to delete.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_custom_property(name))
+    return _js(_resolve(document_handle)[1].delete_custom_property(name))
 
 
 # ── Images ─────────────────────────────────────────────────────────────────
@@ -719,24 +826,31 @@ def insert_floating_image(
     h_pos: float = 0.0,
     v_pos: float = 0.0,
     wrap: str = "square",
+    document_handle: str = "",
 ) -> str:
-    """Insert a floating (anchored) image. wrap: square|topbottom|none."""
-    doc = _require_doc()
+    """Insert a floating (anchored) image. wrap: square|topbottom|none.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    doc = _resolve(document_handle)[1]
     return _js(
         doc.insert_floating_image(para_id, image_path, width_cm, height_cm, h_pos, v_pos, wrap)
     )  # noqa: E501
 
 
 @mcp.tool()
-def delete_image(rId: str) -> str:
+def delete_image(rId: str, document_handle: str = "") -> str:
     """Remove the drawing containing the image with the given rId from the document.
 
     Also removes the relationship entry from word/_rels/document.xml.rels.
 
     Args:
         rId: The relationship ID of the image to delete (e.g. 'rId5').
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_image(rId))
+    return _js(_resolve(document_handle)[1].delete_image(rId))
 
 
 @mcp.tool()
@@ -756,27 +870,33 @@ def update_image(rId: str, new_image_path: str, document_handle: str = "") -> st
 
 
 @mcp.tool()
-def set_image_size(rId: str, width_cm: float, height_cm: float) -> str:
+def set_image_size(rId: str, width_cm: float, height_cm: float, document_handle: str = "") -> str:
     """Resize an embedded image by updating its EMU extent attributes.
 
     Args:
         rId: The relationship ID of the image to resize.
         width_cm: New width in centimetres.
         height_cm: New height in centimetres.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_image_size(rId, width_cm, height_cm))
+    return _js(_resolve(document_handle)[1].set_image_size(rId, width_cm, height_cm))
 
 
 @mcp.tool()
-def set_image_alt_text(rId: str, alt_text: str, title: str = "") -> str:
+def set_image_alt_text(rId: str, alt_text: str, title: str = "", document_handle: str = "") -> str:
     """Set accessibility alt text and title on an embedded image.
 
     Args:
         rId: The relationship ID of the image.
         alt_text: Alt text (descr attribute on wp:docPr).
         title: Optional title attribute on wp:docPr.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_image_alt_text(rId, alt_text, title=title))
+    return _js(_resolve(document_handle)[1].set_image_alt_text(rId, alt_text, title=title))
 
 
 @mcp.tool()
