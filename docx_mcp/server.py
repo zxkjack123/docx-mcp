@@ -1683,17 +1683,36 @@ def list_comment_threads(document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def save_document(output_path: str = "", document_handle: str = "") -> str:
+def save_document(
+    output_path: str = "",
+    document_handle: str = "",
+    sanitize_level: int = 0,
+    redact_authors_as: str = "Anonymous",
+) -> str:
     """Save all changes back to a .docx file.
 
     Args:
         output_path: Path for the output file. If empty, overwrites the original
             source path of the document under this handle.
         document_handle: Handle of the document to save. Empty = `__default__`.
+        sanitize_level: 0 (default) saves verbatim. 1 additionally strips
+            revision-save ids, 2 also redacts tracked-change authors, 3 also
+            clears document properties (creator, company, attached template).
+            Values outside 0-3 are rejected.
+        redact_authors_as: Author label written by sanitize levels >= 2.
     """
+    if not 0 <= sanitize_level <= 3:
+        raise ValueError("sanitize_level must be between 0 and 3")
     _, doc = _resolve(document_handle)
     path = output_path if output_path else None
-    return _js(doc.save(path))
+    result = doc.save(path)
+    if sanitize_level:
+        result["sanitized"] = doc.sanitize_metadata(
+            result["path"],
+            level=sanitize_level,
+            redact_authors_as=redact_authors_as,
+        )
+    return _js(result)
 
 
 @mcp.tool()
