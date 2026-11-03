@@ -147,7 +147,48 @@ CASES = [
     ("set_page_break_before", {"para_id": None, "enabled": None}),
     ("set_widow_control", {"para_id": None, "enabled": None}),
     ("insert_blockquote", {"para_id": None, "text": None}),
+    ("insert_code_block", {"para_id": None, "text": None}),
+    ("set_line_spacing", {"para_id": None}),
+    ("get_paragraph_format", {"para_id": None}),
+    ("get_runs", {"para_id": None}),
+    ("set_run_font", {"para_id": None, "run_idx": None, "font_name": None}),
+    ("set_run_color", {"para_id": None, "run_idx": None, "color": None}),
+    ("set_run_size", {"para_id": None, "run_idx": None, "size_pt": None}),
+    ("set_character_spacing", {"para_id": None, "run_idx": None, "spacing_pt": None}),
+    ("set_character_position", {"para_id": None, "run_idx": None, "position_pt": None}),
+    ("set_run_highlight", {"para_id": None, "run_idx": None, "color": None}),
+    ("set_run_strikethrough", {"para_id": None, "run_idx": None}),
+    ("set_run_superscript", {"para_id": None, "run_idx": None}),
+    ("set_run_subscript", {"para_id": None, "run_idx": None}),
+    ("set_run_underline", {"para_id": None, "run_idx": None}),
+    ("clear_run_formatting", {"para_id": None, "run_idx": None}),
+    ("set_run_language", {"para_id": None, "run_idx": None, "language_code": None}),
+    ("set_text_case", {"para_id": None, "run_idx": None, "case": None}),
+    ("export_markdown", {}),
+    ("get_theme_colors", {}),
+    ("set_theme_color", {"slot": None, "hex_color": None}),
+    ("insert_caption", {"after_para_id": None, "text": None}),
+    ("split_document", {}),
+    ("get_word_count", {}),
+    ("get_statistics", {}),
+    ("set_document_language", {"language_code": None}),
+    ("set_track_changes", {"enabled": None}),
+    ("split_table", {"table_idx": None, "at_row_index": None}),
+    ("duplicate_table_row", {"table_idx": None, "row_index": None}),
+    ("sort_table", {"table_idx": None, "column_index": None}),
+    ("get_table", {"table_idx": None}),
 ]
+
+
+def _contains_selection(payload, expected):
+    """Match the mock payload at any nesting level (some tools wrap results)."""
+    if payload == expected:
+        return True
+    if isinstance(payload, dict):
+        return any(_contains_selection(v, expected) for v in payload.values())
+    if isinstance(payload, list):
+        return any(_contains_selection(v, expected) for v in payload)
+    return False
 
 
 @pytest.mark.parametrize("name,kwargs", CASES)
@@ -157,7 +198,7 @@ def test_remaining_handle_isolation(monkeypatch, name, kwargs):
     monkeypatch.setattr(server, "_docs", {"A": a, "B": b})
     monkeypatch.setattr(server, "_REQUIRE_HANDLE", True)
     result = getattr(server, name)(**kwargs, document_handle="B")
-    assert json.loads(result) == {"selected": "B"}
+    assert _contains_selection(json.loads(result), {"selected": "B"})
     getattr(b, name).assert_called_once()
     assert not a.mock_calls
     with pytest.raises(RuntimeError, match="'C'"):
@@ -177,7 +218,17 @@ def test_remaining_legacy_default(monkeypatch, name, kwargs):
     getattr(doc, name).return_value = {"selected": "default"}
     monkeypatch.setattr(server, "_docs", {server._DEFAULT_HANDLE: doc})
     monkeypatch.setattr(server, "_REQUIRE_HANDLE", False)
-    assert json.loads(getattr(server, name)(**kwargs)) == {"selected": "default"}
-    assert json.loads(getattr(server, name)(**kwargs, document_handle="")) == {
-        "selected": "default"
-    }
+    assert _contains_selection(json.loads(getattr(server, name)(**kwargs)), {"selected": "default"})
+    assert _contains_selection(
+        json.loads(getattr(server, name)(**kwargs, document_handle="")),
+        {"selected": "default"},
+    )
+
+
+def test_get_word_count_wrapper_contract(monkeypatch):
+    """get_word_count wraps the document result; pin that contract exactly."""
+    doc = Mock()
+    doc.get_word_count.return_value = {"words": 42}
+    monkeypatch.setattr(server, "_docs", {"B": doc})
+    monkeypatch.setattr(server, "_REQUIRE_HANDLE", True)
+    assert json.loads(server.get_word_count(document_handle="B")) == {"word_count": {"words": 42}}

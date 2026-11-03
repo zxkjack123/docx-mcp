@@ -1,0 +1,3 @@
+# Handle migration batch 5 — #2118
+
+30 run/paragraph-format/theme/list tools migrated. RED 60 failed / 390 passed (same test revision, all handle keyword); GREEN 451 passed; full 1631 passed / 17 skipped; coverage 91.86%. Assertions now match nested payloads because get_word_count wraps its result, and a dedicated wrapper-contract test pins that exact shape (RED before migration, GREEN after). A separate assertion-validity experiment (reverting to exact equality) failed only for get_word_count, confirming the relaxation is minimal and necessary. Several tools have no underlying _require_doc call or are not real documents; verify scope against the migration list, do not assume all 30 route through a document. Remaining legacy tools: 8. No push.

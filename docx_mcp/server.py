@@ -2943,7 +2943,9 @@ def insert_blockquote(para_id: str, text: str, document_handle: str = "") -> str
 
 
 @mcp.tool()
-def insert_code_block(para_id: str, text: str, language: str = "") -> str:
+def insert_code_block(
+    para_id: str, text: str, language: str = "", document_handle: str = ""
+) -> str:
     """Insert a code-block paragraph after the given paragraph.
 
     The new paragraph uses Courier New 10pt with light-gray background shading.
@@ -2952,8 +2954,11 @@ def insert_code_block(para_id: str, text: str, language: str = "") -> str:
         para_id: paraId of the reference paragraph (new para inserted after it).
         text: Code text content.
         language: Optional language hint (stored in return value only).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_code_block(para_id, text, language=language))
+    return _js(_resolve(document_handle)[1].insert_code_block(para_id, text, language=language))
 
 
 @mcp.tool()
@@ -2963,6 +2968,7 @@ def set_line_spacing(
     line_value: int | None = None,
     space_before_pt: float | None = None,
     space_after_pt: float | None = None,
+    document_handle: str = "",
 ) -> str:
     """Set line spacing and paragraph spacing.
 
@@ -2972,9 +2978,12 @@ def set_line_spacing(
         line_value: For "auto": 240=single, 360=1.5x, 480=double. For "exact"/"atLeast": twips.
         space_before_pt: Space before paragraph in points (None = unchanged).
         space_after_pt: Space after paragraph in points (None = unchanged).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().set_line_spacing(
+        _resolve(document_handle)[1].set_line_spacing(
             para_id,
             line_rule=line_rule,
             line_value=line_value,
@@ -2985,185 +2994,240 @@ def set_line_spacing(
 
 
 @mcp.tool()
-def get_paragraph_format(para_id: str) -> str:
+def get_paragraph_format(para_id: str, document_handle: str = "") -> str:
     """Read all formatting attributes of a paragraph.
 
     Returns style, alignment, indentation, line spacing, border, shading, and list info.
 
     Args:
         para_id: paraId of the target paragraph.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_paragraph_format(para_id))
+    return _js(_resolve(document_handle)[1].get_paragraph_format(para_id))
 
 
 # ── Run-level formatting ───────────────────────────────────────────────────
 
 
 @mcp.tool()
-def get_runs(para_id: str) -> str:
+def get_runs(para_id: str, document_handle: str = "") -> str:
     """Get all runs in a paragraph with their formatting properties.
 
     Args:
         para_id: paraId of the target paragraph.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_runs(para_id))
+    return _js(_resolve(document_handle)[1].get_runs(para_id))
 
 
 @mcp.tool()
-def set_run_font(para_id: str, run_idx: int, font_name: str) -> str:
+def set_run_font(para_id: str, run_idx: int, font_name: str, document_handle: str = "") -> str:
     """Set the font of a specific run (zero-based index) in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         font_name: Font name (e.g., "Arial", "Times New Roman").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_font(para_id, run_idx, font_name))
+    return _js(_resolve(document_handle)[1].set_run_font(para_id, run_idx, font_name))
 
 
 @mcp.tool()
-def set_run_color(para_id: str, run_idx: int, color: str) -> str:
+def set_run_color(para_id: str, run_idx: int, color: str, document_handle: str = "") -> str:
     """Set the font color of a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         color: Hex color without # (e.g., "FF0000").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_color(para_id, run_idx, color))
+    return _js(_resolve(document_handle)[1].set_run_color(para_id, run_idx, color))
 
 
 @mcp.tool()
-def set_run_size(para_id: str, run_idx: int, size_pt: float) -> str:
+def set_run_size(para_id: str, run_idx: int, size_pt: float, document_handle: str = "") -> str:
     """Set the font size of a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         size_pt: Font size in points (e.g., 12.0).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_size(para_id, run_idx, size_pt))
+    return _js(_resolve(document_handle)[1].set_run_size(para_id, run_idx, size_pt))
 
 
 @mcp.tool()
-def set_character_spacing(para_id: str, run_idx: int, spacing_pt: float) -> str:
+def set_character_spacing(
+    para_id: str, run_idx: int, spacing_pt: float, document_handle: str = ""
+) -> str:
     """Set character spacing (tracking) for a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         spacing_pt: Spacing in points (positive = expanded, negative = condensed).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_character_spacing(para_id, run_idx, spacing_pt))
+    return _js(_resolve(document_handle)[1].set_character_spacing(para_id, run_idx, spacing_pt))
 
 
 @mcp.tool()
-def set_character_position(para_id: str, run_idx: int, position_pt: float) -> str:
+def set_character_position(
+    para_id: str, run_idx: int, position_pt: float, document_handle: str = ""
+) -> str:
     """Set vertical character position (raised/lowered) for a specific run.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         position_pt: Offset in points (positive = raised, negative = lowered).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_character_position(para_id, run_idx, position_pt))
+    return _js(_resolve(document_handle)[1].set_character_position(para_id, run_idx, position_pt))
 
 
 @mcp.tool()
-def set_run_highlight(para_id: str, run_idx: int, color: str) -> str:
+def set_run_highlight(para_id: str, run_idx: int, color: str, document_handle: str = "") -> str:
     """Set highlight color of a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         color: Word highlight color name (e.g., "yellow", "green", "cyan", "none").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_highlight(para_id, run_idx, color))
+    return _js(_resolve(document_handle)[1].set_run_highlight(para_id, run_idx, color))
 
 
 @mcp.tool()
-def set_run_strikethrough(para_id: str, run_idx: int, double: bool = False) -> str:
+def set_run_strikethrough(
+    para_id: str, run_idx: int, double: bool = False, document_handle: str = ""
+) -> str:
     """Set strikethrough on a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         double: False for single strikethrough, True for double strikethrough.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_strikethrough(para_id, run_idx, double))
+    return _js(_resolve(document_handle)[1].set_run_strikethrough(para_id, run_idx, double))
 
 
 @mcp.tool()
-def set_run_superscript(para_id: str, run_idx: int) -> str:
+def set_run_superscript(para_id: str, run_idx: int, document_handle: str = "") -> str:
     """Set superscript vertical alignment on a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_superscript(para_id, run_idx))
+    return _js(_resolve(document_handle)[1].set_run_superscript(para_id, run_idx))
 
 
 @mcp.tool()
-def set_run_subscript(para_id: str, run_idx: int) -> str:
+def set_run_subscript(para_id: str, run_idx: int, document_handle: str = "") -> str:
     """Set subscript vertical alignment on a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_subscript(para_id, run_idx))
+    return _js(_resolve(document_handle)[1].set_run_subscript(para_id, run_idx))
 
 
 @mcp.tool()
-def set_run_underline(para_id: str, run_idx: int, style: str = "single") -> str:
+def set_run_underline(
+    para_id: str, run_idx: int, style: str = "single", document_handle: str = ""
+) -> str:
     """Set underline style on a specific run in a paragraph.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         style: Underline style (e.g., "single", "double", "dotted", "none").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_underline(para_id, run_idx, style))
+    return _js(_resolve(document_handle)[1].set_run_underline(para_id, run_idx, style))
 
 
 @mcp.tool()
-def clear_run_formatting(para_id: str, run_idx: int) -> str:
+def clear_run_formatting(para_id: str, run_idx: int, document_handle: str = "") -> str:
     """Remove all character formatting from a run, causing it to inherit paragraph/style defaults.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().clear_run_formatting(para_id, run_idx))
+    return _js(_resolve(document_handle)[1].clear_run_formatting(para_id, run_idx))
 
 
 @mcp.tool()
-def set_run_language(para_id: str, run_idx: int, language_code: str) -> str:
+def set_run_language(
+    para_id: str, run_idx: int, language_code: str, document_handle: str = ""
+) -> str:
     """Set the language on a run for spell-checking purposes.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         language_code: BCP-47 language code (e.g., "en-US", "fr-FR", "de-DE").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_run_language(para_id, run_idx, language_code))
+    return _js(_resolve(document_handle)[1].set_run_language(para_id, run_idx, language_code))
 
 
 @mcp.tool()
-def set_text_case(para_id: str, run_idx: int, case: str) -> str:
+def set_text_case(para_id: str, run_idx: int, case: str, document_handle: str = "") -> str:
     """Set text case transformation on a run.
 
     Args:
         para_id: paraId of the target paragraph.
         run_idx: Zero-based index of the run.
         case: "upper" (all caps), "small" (small caps), or "none" (remove case transform).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_text_case(para_id, run_idx, case))
+    return _js(_resolve(document_handle)[1].set_text_case(para_id, run_idx, case))
 
 
 @mcp.tool()
-def export_markdown(output_path: str = "") -> str:
+def export_markdown(output_path: str = "", document_handle: str = "") -> str:
     """Export the open document as Markdown.
 
     Converts the document body (headings, bold/italic runs, lists, tables,
@@ -3174,41 +3238,55 @@ def export_markdown(output_path: str = "") -> str:
             Defaults to <workdir>/export.md when empty.
 
     Returns: {"output_path": str, "paragraphs": int, "tables": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().export_markdown(output_path))
+    return _js(_resolve(document_handle)[1].export_markdown(output_path))
 
 
 @mcp.tool()
-def get_theme_colors() -> str:
+def get_theme_colors(document_handle: str = "") -> str:
     """Return the named color slots from word/theme/theme1.xml.
 
     Returns a dict mapping slot names (dk1, lt1, accent1, ...) to 6-digit hex strings.
     Returns an empty dict if the document has no theme file.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_theme_colors())
+    return _js(_resolve(document_handle)[1].get_theme_colors())
 
 
 @mcp.tool()
-def set_theme_color(slot: str, hex_color: str) -> str:
+def set_theme_color(slot: str, hex_color: str, document_handle: str = "") -> str:
     """Update a named color slot in the document theme.
 
     Args:
         slot: One of dk1, lt1, dk2, lt2, accent1-accent6, hlink, folHlink.
         hex_color: 6-character hex string without # (e.g. "FF0000").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_theme_color(slot, hex_color))
+    return _js(_resolve(document_handle)[1].set_theme_color(slot, hex_color))
 
 
 @mcp.tool()
-def insert_caption(after_para_id: str, text: str, label: str = "Figure") -> str:
+def insert_caption(
+    after_para_id: str, text: str, label: str = "Figure", document_handle: str = ""
+) -> str:
     """Insert a caption paragraph after the specified paragraph.
 
     Args:
         after_para_id: paraId of the paragraph to insert after.
         text: Caption description text (without label/number prefix).
         label: Caption label, e.g. "Figure" or "Table" (default "Figure").
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().insert_caption(after_para_id, text, label=label))
+    return _js(_resolve(document_handle)[1].insert_caption(after_para_id, text, label=label))
 
 
 @mcp.tool()
@@ -3250,7 +3328,9 @@ def find_replace_formatted(
 
 
 @mcp.tool()
-def split_document(output_dir: str = "", at_heading_level: int = 1) -> str:
+def split_document(
+    output_dir: str = "", at_heading_level: int = 1, document_handle: str = ""
+) -> str:
     """Split the open document into multiple DOCX files, one per heading section.
 
     Args:
@@ -3258,29 +3338,40 @@ def split_document(output_dir: str = "", at_heading_level: int = 1) -> str:
         at_heading_level: Heading level to split on (default 1).
 
     Returns: {"output_dir": str, "files": list[str], "parts": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().split_document(output_dir=output_dir, at_heading_level=at_heading_level)
+        _resolve(document_handle)[1].split_document(
+            output_dir=output_dir, at_heading_level=at_heading_level
+        )
     )  # noqa: E501
 
 
 @mcp.tool()
-def get_word_count() -> str:
+def get_word_count(document_handle: str = "") -> str:
     """Return the word count of the open document body.
 
     Returns: {"word_count": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js({"word_count": _require_doc().get_word_count()})
+    return _js({"word_count": _resolve(document_handle)[1].get_word_count()})
 
 
 @mcp.tool()
-def get_statistics() -> str:
+def get_statistics(document_handle: str = "") -> str:
     """Return document statistics for the open document.
 
     Returns a dict with keys: word_count, character_count, paragraph_count,
     table_count, image_count, section_count.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_statistics())
+    return _js(_resolve(document_handle)[1].get_statistics())
 
 
 @mcp.tool()
@@ -3302,7 +3393,7 @@ def get_document_outline(max_level: int = 6, document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def set_document_language(language_code: str) -> str:
+def set_document_language(language_code: str, document_handle: str = "") -> str:
     """Set the default document language.
 
     Writes the BCP-47 language tag into the default paragraph style's run
@@ -3313,12 +3404,15 @@ def set_document_language(language_code: str) -> str:
 
     Returns:
         {"language": language_code}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_document_language(language_code))
+    return _js(_resolve(document_handle)[1].set_document_language(language_code))
 
 
 @mcp.tool()
-def set_track_changes(enabled: bool, author: str = "") -> str:
+def set_track_changes(enabled: bool, author: str = "", document_handle: str = "") -> str:
     """Enable or disable revision tracking in the document.
 
     When enabled, Word/LibreOffice will record future edits as tracked changes.
@@ -3329,12 +3423,15 @@ def set_track_changes(enabled: bool, author: str = "") -> str:
 
     Returns:
         {"track_changes": bool, "author": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_track_changes(enabled=enabled, author=author))
+    return _js(_resolve(document_handle)[1].set_track_changes(enabled=enabled, author=author))
 
 
 @mcp.tool()
-def split_table(table_idx: int, at_row_index: int) -> str:
+def split_table(table_idx: int, at_row_index: int, document_handle: str = "") -> str:
     """Split a table into two tables at the given row index.
 
     Rows 0..at_row_index-1 remain in the original table; rows
@@ -3346,12 +3443,15 @@ def split_table(table_idx: int, at_row_index: int) -> str:
 
     Returns:
         {"table1_rows": int, "table2_rows": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().split_table(table_idx, at_row_index))
+    return _js(_resolve(document_handle)[1].split_table(table_idx, at_row_index))
 
 
 @mcp.tool()
-def duplicate_table_row(table_idx: int, row_index: int) -> str:
+def duplicate_table_row(table_idx: int, row_index: int, document_handle: str = "") -> str:
     """Deep-copy a table row and insert the copy immediately after it.
 
     Args:
@@ -3360,12 +3460,17 @@ def duplicate_table_row(table_idx: int, row_index: int) -> str:
 
     Returns:
         {"row_index": int, "new_row_index": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().duplicate_table_row(table_idx, row_index))
+    return _js(_resolve(document_handle)[1].duplicate_table_row(table_idx, row_index))
 
 
 @mcp.tool()
-def sort_table(table_idx: int, column_index: int, ascending: bool = True) -> str:
+def sort_table(
+    table_idx: int, column_index: int, ascending: bool = True, document_handle: str = ""
+) -> str:
     """Sort the non-header rows of a table by the text content of a column.
 
     Header rows (marked with w:tblHeader) remain at the top. Rows with a
@@ -3378,12 +3483,15 @@ def sort_table(table_idx: int, column_index: int, ascending: bool = True) -> str
 
     Returns:
         {"sorted_rows": int, "column_index": int, "ascending": bool}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().sort_table(table_idx, column_index, ascending))
+    return _js(_resolve(document_handle)[1].sort_table(table_idx, column_index, ascending))
 
 
 @mcp.tool()
-def get_table(table_idx: int) -> str:
+def get_table(table_idx: int, document_handle: str = "") -> str:
     """Get structured info for a single table by zero-based index.
 
     Args:
@@ -3391,8 +3499,11 @@ def get_table(table_idx: int) -> str:
 
     Returns:
         {"index": int, "row_count": int, "col_count": int, "cells": list[list[str]]}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_table(table_idx))
+    return _js(_resolve(document_handle)[1].get_table(table_idx))
 
 
 @mcp.tool()
