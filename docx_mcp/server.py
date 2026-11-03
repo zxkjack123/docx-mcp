@@ -3507,7 +3507,7 @@ def get_table(table_idx: int, document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def get_cell_text(table_idx: int, row_idx: int, col_idx: int) -> str:
+def get_cell_text(table_idx: int, row_idx: int, col_idx: int, document_handle: str = "") -> str:
     """Return text content of a specific cell.
 
     Args:
@@ -3517,12 +3517,15 @@ def get_cell_text(table_idx: int, row_idx: int, col_idx: int) -> str:
 
     Returns:
         {"table_index": int, "row_index": int, "col_index": int, "text": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_cell_text(table_idx, row_idx, col_idx))
+    return _js(_resolve(document_handle)[1].get_cell_text(table_idx, row_idx, col_idx))
 
 
 @mcp.tool()
-def copy_table(table_idx: int) -> str:
+def copy_table(table_idx: int, document_handle: str = "") -> str:
     """Deep-copy a table and insert the copy immediately after the original.
 
     Args:
@@ -3530,8 +3533,11 @@ def copy_table(table_idx: int) -> str:
 
     Returns:
         {"source_index": int, "new_index": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().copy_table(table_idx))
+    return _js(_resolve(document_handle)[1].copy_table(table_idx))
 
 
 @mcp.tool()
@@ -3570,7 +3576,7 @@ def convert_to_pdf(output_path: str, document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def flatten_document() -> str:
+def flatten_document(document_handle: str = "") -> str:
     """Accept all tracked changes and remove all revision markup.
 
     Accepts every w:ins / w:del and strips all w:rPrChange and w:pPrChange
@@ -3578,12 +3584,15 @@ def flatten_document() -> str:
 
     Returns:
         {"changes_accepted": int, "formatting_changes_removed": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().flatten_document())
+    return _js(_resolve(document_handle)[1].flatten_document())
 
 
 @mcp.tool()
-def get_reading_time(words_per_minute: int = 200) -> str:
+def get_reading_time(words_per_minute: int = 200, document_handle: str = "") -> str:
     """Estimate reading time for the open document.
 
     Args:
@@ -3591,15 +3600,20 @@ def get_reading_time(words_per_minute: int = 200) -> str:
 
     Returns:
         {"word_count": int, "words_per_minute": int, "minutes": float, "seconds": int}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_reading_time(words_per_minute=words_per_minute))
+    return _js(_resolve(document_handle)[1].get_reading_time(words_per_minute=words_per_minute))
 
 
 # ── Accessibility (P8.8) ─────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def set_alt_text(image_index: int, alt_text: str, title: str = "") -> str:
+def set_alt_text(
+    image_index: int, alt_text: str, title: str = "", document_handle: str = ""
+) -> str:
     """Set the alt text (and optionally title) on an image by 0-based index.
 
     Args:
@@ -3609,12 +3623,15 @@ def set_alt_text(image_index: int, alt_text: str, title: str = "") -> str:
 
     Returns:
         {"image_index": int, "alt_text": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_alt_text(image_index, alt_text, title=title))
+    return _js(_resolve(document_handle)[1].set_alt_text(image_index, alt_text, title=title))
 
 
 @mcp.tool()
-def get_alt_text(image_index: int) -> str:
+def get_alt_text(image_index: int, document_handle: str = "") -> str:
     """Get the alt text and title for an image by 0-based index.
 
     Args:
@@ -3622,20 +3639,26 @@ def get_alt_text(image_index: int) -> str:
 
     Returns:
         {"image_index": int, "alt_text": str, "title": str}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_alt_text(image_index))
+    return _js(_resolve(document_handle)[1].get_alt_text(image_index))
 
 
 @mcp.tool()
-def check_accessibility() -> str:
+def check_accessibility(document_handle: str = "") -> str:
     """Scan the document for accessibility issues.
 
     Checks images for missing alt text and tables for missing header rows.
 
     Returns:
         {"issue_count": int, "issues": list[dict]}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().check_accessibility())
+    return _js(_resolve(document_handle)[1].check_accessibility())
 
 
 @mcp.tool()
@@ -3644,6 +3667,7 @@ def insert_text_box(
     text: str,
     width_cm: float = 5.0,
     height_cm: float = 2.0,
+    document_handle: str = "",
 ) -> str:
     """Insert an inline text box after the paragraph with para_id.
 
@@ -3655,9 +3679,14 @@ def insert_text_box(
 
     Returns:
         JSON with para_id (new paragraph), text, width_cm, height_cm.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().insert_text_box(para_id, text, width_cm=width_cm, height_cm=height_cm)
+        _resolve(document_handle)[1].insert_text_box(
+            para_id, text, width_cm=width_cm, height_cm=height_cm
+        )
     )  # noqa: E501
 
 

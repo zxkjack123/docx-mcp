@@ -177,6 +177,14 @@ CASES = [
     ("duplicate_table_row", {"table_idx": None, "row_index": None}),
     ("sort_table", {"table_idx": None, "column_index": None}),
     ("get_table", {"table_idx": None}),
+    ("get_cell_text", {"table_idx": None, "row_idx": None, "col_idx": None}),
+    ("copy_table", {"table_idx": None}),
+    ("flatten_document", {}),
+    ("get_reading_time", {}),
+    ("set_alt_text", {"image_index": None, "alt_text": None}),
+    ("get_alt_text", {"image_index": None}),
+    ("check_accessibility", {}),
+    ("insert_text_box", {"para_id": None, "text": None}),
 ]
 
 
