@@ -900,7 +900,9 @@ def set_image_alt_text(rId: str, alt_text: str, title: str = "", document_handle
 
 
 @mcp.tool()
-def set_image_border(rId: str, border_pt: float, color: str = "000000") -> str:
+def set_image_border(
+    rId: str, border_pt: float, color: str = "000000", document_handle: str = ""
+) -> str:
     """Set or remove a border on an embedded image.
 
     Args:
@@ -910,8 +912,11 @@ def set_image_border(rId: str, border_pt: float, color: str = "000000") -> str:
 
     Returns:
         JSON with rId, border_pt, and color fields.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_image_border(rId, border_pt, color))
+    return _js(_resolve(document_handle)[1].set_image_border(rId, border_pt, color))
 
 
 # ── Endnotes ───────────────────────────────────────────────────────────────
@@ -975,18 +980,21 @@ def validate_footnotes(document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def update_footnote(footnote_id: int, text: str) -> str:
+def update_footnote(footnote_id: int, text: str, document_handle: str = "") -> str:
     """Update the text of an existing footnote.
 
     Args:
         footnote_id: The numeric ID of the footnote to update (must be >= 1).
         text: The new text content for the footnote.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().update_footnote(footnote_id, text))
+    return _js(_resolve(document_handle)[1].update_footnote(footnote_id, text))
 
 
 @mcp.tool()
-def delete_footnote(footnote_id: int) -> str:
+def delete_footnote(footnote_id: int, document_handle: str = "") -> str:
     """Delete a footnote and its in-body reference.
 
     Removes the footnote definition from footnotes.xml and removes the
@@ -994,23 +1002,29 @@ def delete_footnote(footnote_id: int) -> str:
 
     Args:
         footnote_id: The numeric ID of the footnote to delete.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_footnote(footnote_id))
+    return _js(_resolve(document_handle)[1].delete_footnote(footnote_id))
 
 
 @mcp.tool()
-def update_endnote(endnote_id: int, text: str) -> str:
+def update_endnote(endnote_id: int, text: str, document_handle: str = "") -> str:
     """Update the text of an existing endnote.
 
     Args:
         endnote_id: The numeric ID of the endnote to update (must be >= 1).
         text: The new text content for the endnote.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().update_endnote(endnote_id, text))
+    return _js(_resolve(document_handle)[1].update_endnote(endnote_id, text))
 
 
 @mcp.tool()
-def delete_endnote(endnote_id: int) -> str:
+def delete_endnote(endnote_id: int, document_handle: str = "") -> str:
     """Delete an endnote and its in-body reference.
 
     Removes the endnote definition from endnotes.xml and removes the
@@ -1018,8 +1032,11 @@ def delete_endnote(endnote_id: int) -> str:
 
     Args:
         endnote_id: The numeric ID of the endnote to delete.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_endnote(endnote_id))
+    return _js(_resolve(document_handle)[1].delete_endnote(endnote_id))
 
 
 # ── Sections / Page breaks ─────────────────────────────────────────────
@@ -1072,15 +1089,20 @@ def set_section_properties(
 
 
 @mcp.tool()
-def set_page_size(width_mm: float, height_mm: float, para_id: str | None = None) -> str:
+def set_page_size(
+    width_mm: float, height_mm: float, para_id: str | None = None, document_handle: str = ""
+) -> str:
     """Set page size from millimetre values.
 
     Args:
         width_mm: Page width in mm (e.g. 210 for A4, 215.9 for Letter).
         height_mm: Page height in mm (e.g. 297 for A4, 279.4 for Letter).
         para_id: paraId of paragraph with section break. None = body section.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_page_size(width_mm, height_mm, para_id=para_id))
+    return _js(_resolve(document_handle)[1].set_page_size(width_mm, height_mm, para_id=para_id))
 
 
 @mcp.tool()
@@ -1090,6 +1112,7 @@ def set_page_margins(
     left_mm: float | None = None,
     right_mm: float | None = None,
     para_id: str | None = None,
+    document_handle: str = "",
 ) -> str:
     """Set page margins from millimetre values.
 
@@ -1099,9 +1122,12 @@ def set_page_margins(
         left_mm: Left margin in mm. None = unchanged.
         right_mm: Right margin in mm. None = unchanged.
         para_id: paraId of paragraph with section break. None = body section.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().set_page_margins(
+        _resolve(document_handle)[1].set_page_margins(
             top_mm=top_mm,
             bottom_mm=bottom_mm,
             left_mm=left_mm,
@@ -1112,26 +1138,34 @@ def set_page_margins(
 
 
 @mcp.tool()
-def set_page_orientation(orientation: str, para_id: str | None = None) -> str:
+def set_page_orientation(
+    orientation: str, para_id: str | None = None, document_handle: str = ""
+) -> str:
     """Set page orientation, swapping width/height dimensions if needed.
 
     Args:
         orientation: "portrait" or "landscape".
         para_id: paraId of paragraph with section break. None = body section.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_page_orientation(orientation, para_id=para_id))
+    return _js(_resolve(document_handle)[1].set_page_orientation(orientation, para_id=para_id))
 
 
 @mcp.tool()
-def get_sections() -> str:
+def get_sections(document_handle: str = "") -> str:
     """List all sections in the document with their properties.
 
     Returns a JSON array of section objects, each containing:
     index, break_type, page_width, page_height, orientation, columns,
     margin_top, margin_bottom (all sizes in twips/DXA).
     The final section always has break_type="".
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().get_sections())
+    return _js(_resolve(document_handle)[1].get_sections())
 
 
 @mcp.tool()
@@ -1139,6 +1173,7 @@ def set_section_columns(
     section_index: int,
     num_columns: int,
     equal_width: bool = True,
+    document_handle: str = "",
 ) -> str:
     """Set the number of columns in a section.
 
@@ -1146,12 +1181,17 @@ def set_section_columns(
         section_index: Zero-based section index (use get_sections to find it).
         num_columns: Number of text columns (1 = single column).
         equal_width: If True, all columns are equal width. Default True.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_section_columns(section_index, num_columns, equal_width))
+    return _js(
+        _resolve(document_handle)[1].set_section_columns(section_index, num_columns, equal_width)
+    )
 
 
 @mcp.tool()
-def delete_section_break(para_id: str) -> str:
+def delete_section_break(para_id: str, document_handle: str = "") -> str:
     """Remove a section break from a paragraph.
 
     Removes the w:sectPr from the paragraph's w:pPr. After removal the
@@ -1162,12 +1202,15 @@ def delete_section_break(para_id: str) -> str:
 
     Raises:
         ValueError: If the paragraph has no section break.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_section_break(para_id))
+    return _js(_resolve(document_handle)[1].delete_section_break(para_id))
 
 
 @mcp.tool()
-def set_different_first_page(section_index: int, enabled: bool) -> str:
+def set_different_first_page(section_index: int, enabled: bool, document_handle: str = "") -> str:
     """Enable or disable a different first-page header/footer for a section.
 
     When enabled, the section can have a unique header/footer on its first page,
@@ -1179,12 +1222,15 @@ def set_different_first_page(section_index: int, enabled: bool) -> str:
 
     Returns:
         {"section_index": int, "different_first_page": bool}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_different_first_page(section_index, enabled))
+    return _js(_resolve(document_handle)[1].set_different_first_page(section_index, enabled))
 
 
 @mcp.tool()
-def set_odd_even_headers(enabled: bool) -> str:
+def set_odd_even_headers(enabled: bool, document_handle: str = "") -> str:
     """Enable or disable different odd/even page headers globally.
 
     This is a document-level setting stored in word/settings.xml. When enabled,
@@ -1195,8 +1241,11 @@ def set_odd_even_headers(enabled: bool) -> str:
 
     Returns:
         {"odd_even_headers": bool}
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().set_odd_even_headers(enabled))
+    return _js(_resolve(document_handle)[1].set_odd_even_headers(enabled))
 
 
 # ── Cross-references ──────────────────────────────────────────────────
@@ -1465,7 +1514,7 @@ def reject_changes(author: str = "", document_handle: str = "") -> str:
 
 
 @mcp.tool()
-def accept_change(change_id: int) -> str:
+def accept_change(change_id: int, document_handle: str = "") -> str:
     """Accept a single tracked change by its change_id.
 
     For insertions: keeps the inserted text (unwraps w:ins).
@@ -1473,12 +1522,15 @@ def accept_change(change_id: int) -> str:
 
     Args:
         change_id: The integer id attribute of the w:ins or w:del element.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().accept_change(change_id))
+    return _js(_resolve(document_handle)[1].accept_change(change_id))
 
 
 @mcp.tool()
-def reject_change(change_id: int) -> str:
+def reject_change(change_id: int, document_handle: str = "") -> str:
     """Reject a single tracked change by its change_id.
 
     For insertions: discards the inserted text (removes w:ins).
@@ -1486,8 +1538,11 @@ def reject_change(change_id: int) -> str:
 
     Args:
         change_id: The integer id attribute of the w:ins or w:del element.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().reject_change(change_id))
+    return _js(_resolve(document_handle)[1].reject_change(change_id))
 
 
 @mcp.tool()
@@ -1573,43 +1628,55 @@ def reply_to_comment(
 
 
 @mcp.tool()
-def update_comment(comment_id: int, text: str) -> str:
+def update_comment(comment_id: int, text: str, document_handle: str = "") -> str:
     """Replace the text of an existing comment.
 
     Args:
         comment_id: ID of the comment to update.
         text: New comment text.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().update_comment(comment_id, text))
+    return _js(_resolve(document_handle)[1].update_comment(comment_id, text))
 
 
 @mcp.tool()
-def delete_comment(comment_id: int) -> str:
+def delete_comment(comment_id: int, document_handle: str = "") -> str:
     """Delete a comment and remove its range markers from the document.
 
     Args:
         comment_id: ID of the comment to delete.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().delete_comment(comment_id))
+    return _js(_resolve(document_handle)[1].delete_comment(comment_id))
 
 
 @mcp.tool()
-def resolve_comment(comment_id: int) -> str:
+def resolve_comment(comment_id: int, document_handle: str = "") -> str:
     """Mark a comment as resolved (sets w15:done='1' in commentsExtended.xml).
 
     Args:
         comment_id: ID of the comment to resolve.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().resolve_comment(comment_id))
+    return _js(_resolve(document_handle)[1].resolve_comment(comment_id))
 
 
 @mcp.tool()
-def list_comment_threads() -> str:
+def list_comment_threads(document_handle: str = "") -> str:
     """List all comment threads (root comments with their replies).
 
     Returns a list of thread dicts: {root: {id, author, date, text}, replies: [...]}.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().list_comment_threads())
+    return _js(_resolve(document_handle)[1].list_comment_threads())
 
 
 # ── Save ────────────────────────────────────────────────────────────────────
@@ -1637,6 +1704,7 @@ def scrub_pii(
     dry_run: bool = False,
     also_sanitize_metadata: bool = True,
     redact_authors_as: str = "REDACTED",
+    document_handle: str = "",
 ) -> str:
     """[EXPERIMENTAL] Detect and redact PII from the open document using Presidio + spaCy NER.
 
@@ -1667,9 +1735,12 @@ def scrub_pii(
         dry_run: If True, detect only — return entity list, write no file.
         also_sanitize_metadata: Apply level-3 metadata sanitization (default True).
         redact_authors_as: Replacement author string for metadata pass.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
     return _js(
-        _require_doc().scrub_pii(
+        _resolve(document_handle)[1].scrub_pii(
             output_path,
             entities=entities,
             confidence_threshold=confidence_threshold,
@@ -1796,81 +1867,108 @@ def generate_change_summary(
 
 
 @mcp.tool()
-def list_parts() -> str:
-    """List all XML parts (files) in the open DOCX zip."""
-    return _js(_require_doc().list_parts())
+def list_parts(document_handle: str = "") -> str:
+    """List all XML parts (files) in the open DOCX zip.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].list_parts())
 
 
 @mcp.tool()
-def read_part(part_path: str) -> str:
+def read_part(part_path: str, document_handle: str = "") -> str:
     """Read raw XML of any DOCX part (e.g. 'word/document.xml').
     Use list_parts() to discover available parts.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().read_part(part_path))
+    return _js(_resolve(document_handle)[1].read_part(part_path))
 
 
 @mcp.tool()
-def write_part(part_path: str, xml: str) -> str:
+def write_part(part_path: str, xml: str, document_handle: str = "") -> str:
     """Replace a DOCX part with new XML. Validates well-formedness first.
     WARNING: Direct XML manipulation can corrupt the document if used incorrectly.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().write_part(part_path, xml))
+    return _js(_resolve(document_handle)[1].write_part(part_path, xml))
 
 
 @mcp.tool()
-def xpath_query(xpath: str, part: str = "word/document.xml") -> str:
+def xpath_query(xpath: str, part: str = "word/document.xml", document_handle: str = "") -> str:
     """Run XPath against any DOCX part. Pre-bound namespaces: w, w14, r, wp, a, mc.
 
     Examples:
       xpath="//w:p" — all paragraphs
       xpath="//w:t/text()" — all text content
       xpath="//w:p[w:pPr/w:pStyle/@w:val='Heading1']" — Heading 1 paragraphs
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().xpath_query(xpath, part))
+    return _js(_resolve(document_handle)[1].xpath_query(xpath, part))
 
 
 # ── Bookmarks ───────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def list_bookmarks() -> str:
-    """List all bookmarks in the document."""
-    return _js(_require_doc().list_bookmarks())
+def list_bookmarks(document_handle: str = "") -> str:
+    """List all bookmarks in the document.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].list_bookmarks())
 
 
 @mcp.tool()
-def add_bookmark(para_id: str, name: str) -> str:
-    """Add a named bookmark wrapping the specified paragraph."""
-    return _js(_require_doc().add_bookmark(para_id, name))
+def add_bookmark(para_id: str, name: str, document_handle: str = "") -> str:
+    """Add a named bookmark wrapping the specified paragraph.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].add_bookmark(para_id, name))
 
 
 @mcp.tool()
-def remove_bookmark(name: str) -> str:
-    """Remove a bookmark by name (keeps paragraph content)."""
-    return _js(_require_doc().remove_bookmark(name))
+def remove_bookmark(name: str, document_handle: str = "") -> str:
+    """Remove a bookmark by name (keeps paragraph content).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].remove_bookmark(name))
 
 
 @mcp.tool()
-def get_bookmarked_text(name: str) -> str:
-    """Get the text content within a named bookmark."""
-    return _js(_require_doc().get_bookmarked_text(name))
+def get_bookmarked_text(name: str, document_handle: str = "") -> str:
+    """Get the text content within a named bookmark.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default."""
+    return _js(_resolve(document_handle)[1].get_bookmarked_text(name))
 
 
 # ── Hyperlinks ──────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
-def list_hyperlinks() -> str:
+def list_hyperlinks(document_handle: str = "") -> str:
     """List all hyperlinks in the document.
 
     Returns a list of dicts with keys: id, url_or_anchor, text, para_id, type.
     type is "external" (r:id based) or "internal" (w:anchor based).
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().list_hyperlinks())
+    return _js(_resolve(document_handle)[1].list_hyperlinks())
 
 
 @mcp.tool()
-def add_hyperlink(para_id: str, text: str, url: str) -> str:
+def add_hyperlink(para_id: str, text: str, url: str, document_handle: str = "") -> str:
     """Append an external hyperlink at the end of a paragraph.
 
     Creates a relationship entry in word/_rels/document.xml.rels and a
@@ -1880,8 +1978,11 @@ def add_hyperlink(para_id: str, text: str, url: str) -> str:
         para_id: w14:paraId of the target paragraph.
         text: Display text for the hyperlink.
         url: The URL the hyperlink points to.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
     """
-    return _js(_require_doc().add_hyperlink(para_id, text, url))
+    return _js(_resolve(document_handle)[1].add_hyperlink(para_id, text, url))
 
 
 @mcp.tool()
