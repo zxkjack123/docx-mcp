@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-from .base import W14, W
+from .base import RELS, W14, R, W
 
 
 class SectionsMixin:
@@ -394,12 +394,102 @@ class SectionsMixin:
         """Return structured info about each section in document order.
 
         Each section dict contains index, break_type, page_width, page_height,
-        orientation, columns, margin_top, margin_bottom.
+        orientation, columns, margin_top, margin_bottom (page geometry in DXA),
+        plus header/footer references and field codes:
+
+        - ``header_refs`` / ``footer_refs``: how many ``w:headerReference`` /
+          ``w:footerReference`` elements the section holds.
+        - ``header_ref_types`` / ``footer_ref_types``: sorted ``w:type`` values
+          ("default", "first", "even"); a reference without a type is "default".
+        - ``titlePg``: True when the section sets ``w:titlePg`` (different
+          first-page header/footer).
+        - ``fields``: sorted, de-duplicated field instruction names (PAGE,
+          NUMPAGES, SEQ, ...) found in the header/footer parts this section
+          references. Aggregate per section, not per part.
+
+        Read-only: no part is marked modified.
         """
         doc = self._require("word/document.xml")
         body = doc.find(f"{W}body")
         sectprs = self._collect_sectprs(body)
-        return [self._parse_sectpr(spr, i, is_final) for i, (spr, is_final) in enumerate(sectprs)]
+        rels = self._rel_targets("word/_rels/document.xml.rels")
+        sections = []
+        for i, (spr, is_final) in enumerate(sectprs):
+            info = self._parse_sectpr(spr, i, is_final)
+            info.update(self._section_ref_info(spr, rels))
+            sections.append(info)
+        return sections
+
+    def _rel_targets(self, rels_path: str) -> dict[str, str]:
+        """Map relationship ids to package-relative part paths.
+
+        Targets are resolved against ``word/`` because header/footer
+        relationships live in ``word/_rels/document.xml.rels``.
+        """
+        tree = self._tree(rels_path)
+        if tree is None:
+            return {}
+        targets: dict[str, str] = {}
+        for rel in tree.findall(f"{RELS}Relationship"):
+            rid = rel.get("Id")
+            target = rel.get("Target") or ""
+            if not rid or not target:
+                continue
+            targets[rid] = self._normalize_target(target)
+        return targets
+
+    @staticmethod
+    def _normalize_target(target: str) -> str:
+        target = target.replace("\\", "/")
+        if target.startswith("/"):
+            return target.lstrip("/")
+        if target.startswith("word/"):
+            return target
+        return f"word/{target}"
+
+    @staticmethod
+    def _field_codes(part) -> set[str]:
+        """Collect field instruction names from one header/footer part."""
+        names: set[str] = set()
+        for instr in part.iter(f"{W}instrText"):
+            names.update(SectionsMixin._field_name(instr.text))
+        for fld in part.iter(f"{W}fldSimple"):
+            names.update(SectionsMixin._field_name(fld.get(f"{W}instr")))
+        return names
+
+    @staticmethod
+    def _field_name(raw: str | None) -> set[str]:
+        """First token of a field instruction, upper-cased (e.g. "PAGE")."""
+        if not raw:
+            return set()
+        tokens = raw.split()
+        return {tokens[0].upper()} if tokens else set()
+
+    def _section_ref_info(self, sectpr, rels: dict[str, str]) -> dict:
+        """Header/footer reference counts, types, titlePg and field codes."""
+        headers = sectpr.findall(f"{W}headerReference")
+        footers = sectpr.findall(f"{W}footerReference")
+
+        def ref_type(ref) -> str:
+            return ref.get(f"{W}type") or "default"
+
+        fields: set[str] = set()
+        for ref in (*headers, *footers):
+            target = rels.get(ref.get(f"{R}id") or "")
+            if target is None:
+                continue
+            part = self._tree(target)
+            if part is not None:
+                fields.update(self._field_codes(part))
+
+        return {
+            "header_refs": len(headers),
+            "footer_refs": len(footers),
+            "header_ref_types": sorted(ref_type(r) for r in headers),
+            "footer_ref_types": sorted(ref_type(r) for r in footers),
+            "titlePg": sectpr.find(f"{W}titlePg") is not None,
+            "fields": sorted(fields),
+        }
 
     def set_section_columns(
         self,
