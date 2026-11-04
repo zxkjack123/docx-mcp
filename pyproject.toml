@@ -81,7 +81,10 @@ source = ["docx_mcp"]
 omit = ["docx_mcp/__main__.py"]
 
 [tool.coverage.report]
-fail_under = 100
+# Single source of truth for the coverage gate. CI invokes pytest without a
+# --cov-fail-under flag on purpose, so this value is what actually gets enforced
+# (both locally and in CI). Keep this in sync with the team's intent.
+fail_under = 88
 show_missing = true
 exclude_lines = [
     "pragma: no cover",

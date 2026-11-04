@@ -33,4 +33,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --frozen --dev
-      - run: uv run pytest --cov=docx_mcp --cov-report=term-missing --cov-fail-under=88
+      # Coverage gate comes from pyproject.toml ([tool.coverage.report] fail_under);
+      # do not pass --cov-fail-under here, otherwise it silently overrides the declared value.
+      - run: uv run pytest --cov=docx_mcp --cov-report=term-missing
