@@ -13,3 +13,9 @@ venv/
 *.so
 .DS_Store
 .worktrees/
+.coverage
+coverage.xml
+htmlcov/
+traces/
+.pm-project
+.pm-project.json

@@ -227,7 +227,7 @@ Every edit is validated against the OOXML specification before saving, catching 
 | `create_from_markdown` | Create a .docx from GitHub-Flavored Markdown |
 | `close_document` | Close the current document and clean up |
 | `get_document_info` | Get overview stats (paragraphs, headings, footnotes, comments) |
-| `save_document` | Save changes back to .docx (can overwrite or save to new path) |
+| `save_document` | Save changes back to .docx (can overwrite or save to new path). Optional `sanitize_level` (0–3) also sanitizes metadata on the way out — see [save-time sanitization](#save-time-metadata-sanitization) |
 
 ### Reading
 
@@ -257,7 +257,7 @@ Every edit is validated against the OOXML specification before saving, catching 
 | Tool | Description |
 |---|---|
 | `generate_change_summary` | Export all tracked changes in the open document as a numbered .txt file — insertions, deletions, and adjacent del+ins pairs grouped as replacements |
-| `compare_documents` | Diff two DOCX files and produce a tracked-change DOCX (Word-openable) |
+| `compare_documents` | Diff two DOCX files and produce a tracked-change DOCX (Word-openable). Rejects inputs containing tables, images, or equations — see [comparison scope](#comparison-scope) |
 | `diff_to_text` | Diff two DOCX files and produce both a tracked-change DOCX and a plain-text summary .txt |
 
 ### Tables
@@ -359,7 +359,26 @@ Every edit is validated against the OOXML specification before saving, catching 
 
 **Failure behaviour** — on timeout the tool raises `RuntimeError: LibreOffice conversion timed out after Ns (set DOCX_MCP_PDF_TIMEOUT to change the limit).`; a non-zero exit raises a `RuntimeError` that includes the exit code and LibreOffice's stderr.
 
-**Singleton limitation** — `convert_to_pdf` accepts no document_handle parameter and always operates on the shared `__default__` slot. When singleton mode is enabled via `DOCX_MCP_REQUIRE_HANDLE=1`, that slot is disabled, so the tool is **currently unavailable** and raises `RuntimeError: document_handle is required in singleton mode ...`. For multi-session isolation, call `save_document(output_path=..., document_handle=...)` and convert the saved DOCX yourself.
+**Singleton mode** — `convert_to_pdf` accepts `document_handle`, so it works under `DOCX_MCP_REQUIRE_HANDLE=1` like every other tool. It still needs LibreOffice installed locally; if neither `libreoffice` nor `soffice` is on `PATH` the tool raises a `RuntimeError`.
+
+Every document tool accepts an optional trailing `document_handle`. Leaving it empty uses the shared `__default__` slot (single-session use); passing a unique value per session isolates documents. Under `DOCX_MCP_REQUIRE_HANDLE=1` the shared slot is disabled, so a call without a handle raises `RuntimeError: document_handle is required in singleton mode ...`. The only exceptions are `compare_documents` and `diff_to_text`, which take file paths rather than an open document and therefore have no handle.
+
+## Save-time metadata sanitization
+
+`save_document` takes an optional `sanitize_level` so a sanitized copy does not require a separate save → reopen → sanitize → close sequence:
+
+| Level | Effect |
+|---|---|
+| `0` (default) | Save verbatim |
+| `1` | Also strip revision-save ids (`w:rsid*`) |
+| `2` | Also redact tracked-change authors (`redact_authors_as`, default `"Anonymous"`) |
+| `3` | Also clear document properties: creator, last modified by, revision, title, company, and the attached-template reference |
+
+Values outside 0–3 raise `ValueError` before anything is written, so a rejected call leaves no output or backup file behind. Levels are cumulative. When `sanitize_level` is greater than 0 the result also carries a `sanitized` key; level 0 results do not, so do not assume a constant response shape.
+
+## Comparison scope
+
+`compare_documents` and `diff_to_text` diff **paragraph text**. They cannot represent tables, drawings, embedded objects, or OMML equations, so if either input contains one of those the call fails with a `ValueError` naming the structure and the offending file, and no output file is written. This is deliberate: an earlier version silently dropped that content and produced an incomplete diff. Convert or remove such structures first, or diff the text separately. Content controls (`w:sdt`) are not covered by this check yet.
 
 ## Requirements
 
