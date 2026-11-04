@@ -68,6 +68,22 @@ wanting to reinstate 100 needs to add tests first (`pyproject.toml` is now the o
 place to change the number). The value 88 was chosen by the user in-session from a
 set of spelled-out options; it was not inferred by the agent.
 
+## Supersedes
+
+This note supersedes the closing remark in `docs/notes/2026-11-04-list-captions.md`
+(committed with #T-5206), which recorded `pyproject.toml` as `fail_under = 100`
+against CI's 88 and noted that a bare `pytest --cov` consequently failed on the
+repository baseline. That note is frozen once committed, so its wording is left
+intact; as of #T-5271 the statement no longer holds — `pyproject.toml` declares 88
+and a bare `pytest --cov` passes.
+
+The other `fail_under = 100` / `--cov-fail-under=100` mentions in this repository
+are dated historical records only (`sessions/`, `docs/plans/`,
+`docs/superpowers/plans|specs/`). None is a live configuration: `coverage debug
+config` reports `pyproject.toml` as the only config file read. Leaving them as they
+are is deliberate — they document what was true in March–May 2026 and are not
+rewritten retroactively.
+
 Related: the same session corrected a PM ledger inconsistency on task #2116
 (`status=done` but `progress=0` and `completed_at=None`); the tool-level
 `pm_task_update` cannot backfill `completed_at`, so `pm_task_complete` with the
