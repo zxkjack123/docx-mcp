@@ -3309,6 +3309,26 @@ def insert_caption(
 
 
 @mcp.tool()
+def docx_list_captions(document_handle: str = "") -> str:
+    """List all figure and table captions in the document, in document order.
+
+    Read-only. A paragraph is reported when its text starts with a recognised
+    label (表 / 图 / Table / Figure) followed by a number, or when it uses the
+    Caption paragraph style. Literal captions and SEQ-driven captions are both
+    included; `seq_field_present` distinguishes them.
+
+    Each entry has para_id, kind ("table"/"figure"/null), label, number_base
+    (e.g. "10-5", "A-1"), sub_suffix (e.g. "b" from "10-5b"), seq_field_present,
+    detected_by and text. Does not insert or modify anything, and does not judge
+    numbering correctness.
+
+    Args (handle):
+        document_handle: Document registry handle; empty uses the legacy default.
+    """
+    return _js(_resolve(document_handle)[1].list_captions())
+
+
+@mcp.tool()
 def find_replace_formatted(
     find: str,
     replace: str,
