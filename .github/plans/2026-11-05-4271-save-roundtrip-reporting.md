@@ -893,6 +893,15 @@ cd /home/gw/opt/docx-mcp && date && git rev-parse HEAD && git status --porcelain
 - 提交：见下条 commit。**未 push**。
 - 边界：未改 `_pre_save_repair` / `_post_repair_warnings` / `_mark` / `_backup_if_exists` / `sanitize_metadata` 本体 / `scrub_pii`；未把保真信息写入 `warnings`；未新增第三方依赖。
 
+### [2026-11-05 12:26] Task 2.2 — ✅ COMPLETED
+
+- 落地：`docx_mcp/server.py` 的 `save_document` docstring **仅 docstring** 扩写：新增 `Returns:` 段（枚举 `path`/`size_bytes`/`modified_parts`/`repairs`/`warnings`/`part_byte_delta`，+`backup`/`sanitized` 条件键），写明 `part_byte_delta` 六字段、无基线时四集合键为 `null`（非 `[]`）及 `baseline_source` 三值语义；新增边界段（part layer vs container layer、`modified_parts` 非字节差异、`sanitize_level>0` 中间态限定）。
+- 验收：`grep -c "part_byte_delta"`→4；`grep -ci "container layer"`→1；`grep -c "not a byte-level difference"`→1；`grep -c "predates"`→**2**（T1.2 后缀 1 + 本任务 docstring 1）；`ruff check` exit 0；`ruff format --check` exit 0；`git diff HEAD -U0 docx_mcp/server.py | grep -E "^[-+](def |@mcp|    return)"` → 无输出、`exit=1`（**代码零改动**）；T1.2 的 sanitize 后缀块字面 `rewritten afterwards by sanitize_level={sanitize_level}` 仍为 1（未被本任务触碰）。
+- 回归：`tests/test_save_fidelity.py` + `tests/test_e2e.py` → **173 passed**。
+- **偏差记录 T2.2-a（计划的 RED 判据在该计划自身实现下不成立）**：计划 T2.2 的 RED 写「`grep -c "part_byte_delta" docx_mcp/server.py` → 输出 `0`（T1.2 只改 `if` 体，不写 docstring/键名）」。**实测写前即为 1** —— T1.2 的 §3.2bis(e) 后缀块含 `result.get("part_byte_delta")` 字面，计划该假设不成立。改用**作用域在本任务产物**的判别器：`grep -c "not a byte-level difference" docx_mcp/server.py` → 写前 `0`（exit=1）→ 写后 `1`。实质要求（docstring 新增且可机械验证）不变。
+- **偏差记录 T2.2-b（计划文案与其自身判据冲突）**：计划给出的声明句写作 `it is **not** a byte-level difference`（Markdown 粗体），而其验收判据是单行 `grep -c "not a byte-level difference"` —— 粗体星号会使该子串**不出现**（`not** a`）。为满足机械判据，docstring 中写作 `it is not a byte-level difference`（去粗体），语义不变。另：本轮首次尝试因换行把该短语拆成两行同样导致判据为 0，已合并为单行（单行 grep 的固有约束）。
+
+
 ---
 
 ## 审查日志

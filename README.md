@@ -227,7 +227,7 @@ Every edit is validated against the OOXML specification before saving, catching 
 | `create_from_markdown` | Create a .docx from GitHub-Flavored Markdown |
 | `close_document` | Close the current document and clean up |
 | `get_document_info` | Get overview stats (paragraphs, headings, footnotes, comments) |
-| `save_document` | Save changes back to .docx (can overwrite or save to new path). Optional `sanitize_level` (0–3) also sanitizes metadata on the way out — see [save-time sanitization](#save-time-metadata-sanitization) |
+| `save_document` | Save changes back to .docx (can overwrite or save to new path). Optional `sanitize_level` (0–3) also sanitizes metadata on the way out — see [save-time sanitization](#save-time-metadata-sanitization). The result also reports what changed byte-for-byte — see [save round-trip fidelity](#save-round-trip-fidelity) |
 
 ### Reading
 
@@ -295,7 +295,35 @@ Every edit is validated against the OOXML specification before saving, catching 
 | `add_endnote` | Add an endnote with superscript reference |
 | `validate_endnotes` | Validate endnote cross-references |
 
-`save_document` runs a pre-save auto-repair pass that removes unreferenced **orphan** footnotes and endnotes. Two classes of notes are deliberately retained: Word's structural note types — `separator`, `continuationSeparator`, and `continuationNotice` — and any note id **pinned** from `word/settings.xml` (`w:footnotePr` / `w:endnotePr`). A note is removed only when it is *not* a recognized structural type, *not* pinned in `settings.xml`, and unreferenced by the body (`w:footnoteReference` / `w:endnoteReference`). A note with an **unknown** type that is also unreferenced is therefore still an orphan and is deleted — the retention guarantees above cover only the structural types and the pinned ids.
+`save_document` runs a pre-save auto-repair pass with four kinds of repair: unreferenced **orphan** footnotes, unreferenced **orphan** endnotes, duplicate `w14:paraId` values (`paraids_deduplicated`), and relationship entries whose target part is missing (`broken_rels_removed`). For the two note kinds, two classes are deliberately retained: Word's structural note types — `separator`, `continuationSeparator`, and `continuationNotice` — and any note id **pinned** from `word/settings.xml` (`w:footnotePr` / `w:endnotePr`). A note is removed only when it is *not* a recognized structural type, *not* pinned in `settings.xml`, and unreferenced by the body (`w:footnoteReference` / `w:endnoteReference`). A note with an **unknown** type that is also unreferenced is therefore still an orphan and is deleted — the retention guarantees above cover only the structural types and the pinned ids.
+
+### Save round-trip fidelity
+
+A save rewrites the package: parts the editor touched are re-serialized, and the ZIP container is rebuilt. Those are two different layers, and only one of them carries information about your document:
+
+- **Part layer** — the bytes of each part (`word/document.xml`, `word/styles.xml`, `media/*`, …).
+- **Container layer** — ZIP entry order, entry timestamps, and compression method. These can change on every repack and say nothing about content.
+
+`save_document` (and the underlying `save()`) return a `part_byte_delta` object comparing the **pre-save contents of the target file** against what that call wrote. Note that `modified_parts` lists the parts the editor marked as dirty; it is not a byte-level difference — a marked part can be re-serialized with identical bytes, and a part that is never re-serialized keeps its bytes even when marked.
+
+| Field | Meaning |
+|---|---|
+| `baseline_source` | `"target_file"` when the target is this document's own source path; `"other_existing_target"` when the target is a different file that already existed; `null` when there was no readable pre-save target |
+| `changed` | Parts present both before and after whose bytes differ |
+| `added` | Parts present only after the save |
+| `removed` | Parts present only before the save |
+| `marked_but_unchanged` | Parts the editor marked dirty whose bytes did not move |
+| `note` | Human-readable summary, or the reason no comparison was possible |
+
+When there is no readable pre-save target — a brand-new output path, or a file that is not a DOCX container — every field except `note` is `null`. That is deliberate: an empty list would read as "compared, and nothing changed", which is a different claim. In that case `note` points at `compare_documents` / `diff_to_text`, the content-level alternatives.
+
+This is a byte measurement, not a verdict, and it complements the content-level views rather than replacing them: `generate_change_summary` answers *what changed in the document*, while `part_byte_delta` answers *which parts differ byte-for-byte*. Neither implies the other — byte differences do not mean content was lost, and a clean byte comparison does not mean the content is what you expected. For the limits of the text-level comparison tools, see [Comparison scope](#comparison-scope).
+
+With `sanitize_level > 0`, `sanitize_metadata` rewrites the same path after the save, so `part_byte_delta` describes the pre-sanitize state and `note` says so explicitly (`rewritten afterwards by sanitize_level=N; this report predates that rewrite`) — it does not describe the file that ends up on disk. See [Save-time metadata sanitization](#save-time-metadata-sanitization).
+
+Scope of this finding (verbatim, from the #4271 investigation):
+
+> 基于 2026-11-02/11-03 两轮调查（17 样本 / 278 部件 / 部件级 0 差异）+ n=1 WPS 外部重存样本 + 本轮告警实现：四类损失在本服务零编辑保存路径未复现；编辑路径缺 pre-edit baseline，根因不可判定。
 
 ### Headers, Footers & Styles
 
