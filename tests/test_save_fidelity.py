@@ -241,3 +241,127 @@ def test_part_comparison_detects_an_added_part(tmp_path: Path):
     _rewrite_part(a, b, None, None, extra=("word/extra.xml", b"<extra/>"))
 
     assert set(_part_hashes(a)) != set(_part_hashes(b))
+
+
+class TestPartFidelity:
+    """PM #4271 - save() must report a part-level byte delta, not just marked parts."""
+
+    def test_inplace_zero_edit_reports_empty_part_delta(self, test_docx: Path):
+        server.open_document(str(test_docx))
+        try:
+            result = json.loads(server.save_document())  # in-place: the target exists
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["baseline_source"] == "target_file"
+        assert delta["changed"] == []
+        assert delta["added"] == []
+        assert delta["removed"] == []
+        assert delta["marked_but_unchanged"] == []
+        assert delta["note"] is None
+        assert result["modified_parts"] == []
+
+    def test_single_paragraph_edit_reports_document_xml_only(self, test_docx: Path):
+        server.open_document(str(test_docx))
+        try:
+            server.insert_text("00000004", " x", tracked=False)
+            result = json.loads(server.save_document())
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["baseline_source"] == "target_file"
+        assert delta["changed"] == ["word/document.xml"]
+        assert "word/styles.xml" not in delta["changed"]
+        assert not [p for p in delta["changed"] if p.startswith("word/media/")]
+        assert delta["added"] == []
+        assert delta["removed"] == []
+        assert delta["marked_but_unchanged"] == []
+        assert result["modified_parts"] == ["word/document.xml"]
+        # The anti-misreading sentence is a runtime contract, not prose: deleting it
+        # from the note must break this test.
+        assert "not evidence of content loss" in delta["note"]
+
+    def test_new_output_path_reports_no_baseline(self, test_docx: Path, tmp_path: Path):
+        out = tmp_path / "brand-new.docx"  # does not exist -> no baseline
+        server.open_document(str(test_docx))
+        try:
+            result = json.loads(server.save_document(str(out)))
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["baseline_source"] is None
+        assert delta["changed"] is None
+        assert delta["added"] is None
+        assert delta["removed"] is None
+        assert delta["marked_but_unchanged"] is None
+        assert isinstance(delta["note"], str)
+        assert delta["note"].startswith("No pre-save baseline")
+        assert out.exists() and result["size_bytes"] > 0
+
+    def test_marked_part_without_tree_is_marked_but_unchanged(self, test_docx: Path):
+        server.open_document(str(test_docx))
+        try:
+            # No parsed tree -> the part is never re-serialized, so its bytes stay put.
+            server._resolve("")[1]._mark("word/media/image1.png")
+            result = json.loads(server.save_document())
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["marked_but_unchanged"] == ["word/media/image1.png"]
+        assert "word/media/image1.png" in result["modified_parts"]
+        assert delta["changed"] == []
+
+    def test_new_part_is_reported_as_added(self, test_docx: Path):
+        server.open_document(str(test_docx))
+        try:
+            server.add_comment("00000001", "fidelity probe")
+            result = json.loads(server.save_document())
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["added"] == ["word/comments.xml"]
+        assert "word/comments.xml" not in delta["changed"]
+        assert delta["changed"] == [
+            "[Content_Types].xml",
+            "word/_rels/document.xml.rels",
+            "word/document.xml",
+        ]
+        assert delta["marked_but_unchanged"] == []
+
+    def test_corrupt_target_degrades_to_no_baseline(self, test_docx: Path, tmp_path: Path):
+        bad = tmp_path / "corrupt.docx"
+        bad.write_bytes(b"not a zip container at all")  # exists, but unreadable as ZIP
+        server.open_document(str(test_docx))
+        try:
+            result = json.loads(server.save_document(str(bad)))
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["baseline_source"] is None and delta["changed"] is None
+        assert bad.stat().st_size > 0  # the save still overwrote successfully
+
+    def test_save_as_over_existing_other_docx_reports_removed_and_sanitize_suffix(
+        self, test_docx: Path, tmp_path: Path
+    ):
+        """Save As onto a *different* existing docx.
+
+        Covers the only branch where `removed` can be non-empty (`baseline_source`
+        must say `other_existing_target`), and - because this call also passes
+        `sanitize_level=1` - the note suffix marking the report as predating the
+        sanitizer's rewrite of the same path.
+        """
+        other = tmp_path / "other.docx"
+        _build(other, SAMPLES["comments"])  # has comments.xml; `test_docx` has not
+        server.open_document(str(test_docx))
+        try:
+            result = json.loads(server.save_document(str(other), sanitize_level=1))
+        finally:
+            server.close_document()
+        delta = result["part_byte_delta"]
+        assert delta["baseline_source"] == "other_existing_target"
+        # Deterministic: every part of `other` except comments.xml also exists in the
+        # source fixture's part set, so exactly this one part disappears.
+        assert delta["removed"] == ["word/comments.xml"]
+        assert "rewritten afterwards by sanitize_level=1" in delta["note"]
+        assert "predates" in delta["note"]
+        assert result["sanitized"]["level"] == 1
