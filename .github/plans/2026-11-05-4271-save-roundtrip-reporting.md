@@ -1,6 +1,6 @@
 # PM #4271 — Save 往返保真：部件级变更摘要 + 文档边界声明
 
-**Status**: PENDING
+**Status**: COMPLETED (T1.1–T4.1 all ✅; V1–V13 pass, V11 skipped — de-ai-fier review tool unavailable)
 **Plan ID**: 2026-11-05-4271-save-roundtrip-reporting
 **Revision**: rev 2（2026-11-05，CT Red-Team verdict REFUTED 处置：3 🔴 + 9 🟡；就地修订，非重建）
 **Date**: 2026-11-05（rev 2 `date` 实测 `Thu Nov 05 11:41:02 AM CST 2026`；执行时重测）
@@ -900,6 +900,51 @@ cd /home/gw/opt/docx-mcp && date && git rev-parse HEAD && git status --porcelain
 - 回归：`tests/test_save_fidelity.py` + `tests/test_e2e.py` → **173 passed**。
 - **偏差记录 T2.2-a（计划的 RED 判据在该计划自身实现下不成立）**：计划 T2.2 的 RED 写「`grep -c "part_byte_delta" docx_mcp/server.py` → 输出 `0`（T1.2 只改 `if` 体，不写 docstring/键名）」。**实测写前即为 1** —— T1.2 的 §3.2bis(e) 后缀块含 `result.get("part_byte_delta")` 字面，计划该假设不成立。改用**作用域在本任务产物**的判别器：`grep -c "not a byte-level difference" docx_mcp/server.py` → 写前 `0`（exit=1）→ 写后 `1`。实质要求（docstring 新增且可机械验证）不变。
 - **偏差记录 T2.2-b（计划文案与其自身判据冲突）**：计划给出的声明句写作 `it is **not** a byte-level difference`（Markdown 粗体），而其验收判据是单行 `grep -c "not a byte-level difference"` —— 粗体星号会使该子串**不出现**（`not** a`）。为满足机械判据，docstring 中写作 `it is not a byte-level difference`（去粗体），语义不变。另：本轮首次尝试因换行把该短语拆成两行同样导致判据为 0，已合并为单行（单行 grep 的固有约束）。
+
+### [2026-11-05 12:30] Task 2.1 — ✅ COMPLETED
+
+- 落地：`README.md` ① 在 `### Footnotes & Endnotes` 末段（`:298`）之后、`### Headers, Footers & Styles` 之前新增 H3 `### Save round-trip fidelity`（29 行），含 part layer vs container layer 对比、`part_byte_delta` 六字段表、无基线 `null`（非 `[]`）语义与 `baseline_source` 三值、与 `generate_change_summary` 的分工与 `[Comparison scope](#comparison-scope)` 链接、`sanitize_level>0` 中间态限定（含 `predates`）与 `[Save-time metadata sanitization](#save-time-metadata-sanitization)` 链接、无基线时 `note` 指向 `compare_documents`/`diff_to_text`、英文定位句 + §3.4 中文结论段逐字；② `:230` 的 `save_document` 表行追加指向新小节的链接（原单元格既有内容与 sanitization 链接保留）。
+- 验收：标题+链接计数 **2**；`^### Save round-trip fidelity` = **1**；`根因不可判定` ≥1；`container layer`/`part layer`（ci）各 ≥1；`not a byte-level difference` ≥1；`paraids_deduplicated`/`broken_rels_removed` 各 ≥1。新小节**作用域内**（awk 提取 29 行）逐项：`comparison-scope`=1、`generate_change_summary`=1、`part_byte_delta`=3、`not a byte-level difference`=1、`sanitize_level`=1、`predates`=1、`compare_documents`=1、`根因不可判定`=1（全部 ≥1，且均在**新小节内**，无既有字符串假绿）。
+- 结论段逐字：`diff` + `sha256sum` 与计划 §3.4 第 354 行**逐字节一致**（`9c308739…10aa0a1`）。
+- **连带修正（显式记载，非静默夹带）**：`:298` 段落原首句只列 2 类修复，已改为列举 `_pre_save_repair` 全 4 类（新增 `paraids_deduplicated`、`broken_rels_removed`），4 个名称与 `docx_mcp/document/base.py:450-453` 字面一致。该缺口**先于本任务存在**（非本任务引入），仅因本次编辑同一段落而一并修正。已同时写入 commit `5d00a81` 的提交信息。
+- **偏差记录 T2.1-a（执行者）**：计划把 T2.1/T2.2 的「执行者」标为 Academic Writer。本 task 的产物是**逐字受约束**的 README 小节（含必须逐字节匹配的中文结论段与 8 个机械判据），委派会引入改写漂移风险，故由编排者**直接执行**。实质产物与判据均已逐条实证。
+- 改动边界：未改 README 其他小节正文（`## Save-time metadata sanitization`、`## Comparison scope` 均**只被链接、未被改写**）；未改工具表其他行；未改既有 `:230` 单元格内容。删除行仅 2 行（表行 1 行 + 段落首句 1 行）。
+- 提交：`5d00a81`（含计划日志）。**未 push**。
+
+### [2026-11-05 12:40] Task 4.1 — ✅ COMPLETED（只读门控 + 审计）
+
+**步骤 1–7（命令 + 实测）**
+1. `pytest tests/test_save_fidelity.py -q` → **25 passed**（exit 0）。
+2. `pytest -q` → **1713 passed, 17 skipped**（1706 + 7，exit 0）。
+3. `pytest --cov=docx_mcp --cov-report=term-missing -q` → `Required test coverage of 88.0% reached. Total coverage: 92.01%`（TOTAL 8941 / 714 未覆盖；exit 0）。
+4. `ruff check .` → `All checks passed!`（exit 0）。
+5. `ruff format --check .` → `150 files already formatted`（exit 0；**未新增 .py**，故仍为 150）。
+6. **提交范围负向验证（按实况适配）**：本 plan 的执行者按 task 提交（见 T1.1 偏差记录），故 T4.1 时工作树**本就是干净的**，计划原判据「`git status --porcelain` 恰好 6 行」不再适用。等价判据（更严）：`git status --porcelain` 空（除本计划日志的收口追加外）；`git diff --name-status 1b51510..HEAD` → **恰好 6 条路径**（`A .github/plans/2026-11-05-4271-save-roundtrip-reporting.md`、`M README.md`、`A docs/notes/2026-11-05-save-roundtrip-reporting.md`、`M docx_mcp/document/base.py`、`M docx_mcp/server.py`、`M tests/test_save_fidelity.py`）—— 与计划期望的**同一组 6 条路径**完全一致（4 M + 2 A）。`git diff HEAD --stat tests/test_e2e.py tests/test_captions_list.py tests/test_sections_header_footer.py` → **空输出**。
+7. 零删改护栏：`git diff 1b51510..HEAD -U0 tests/test_save_fidelity.py | grep -c '^-[^-]'` → 输出 `0`、`exit=1`。
+
+**步骤 8（性能门控，V12）—— 实测，未外推**
+- 样本：50.0 MB（conftest fixture + `word/media/huge.png` 50 MB 随机字节），`parts=12`，落 `/tmp/tmp4m62f128`（**未写入仓库树**）。
+- 四值：`size=50.0 MB` / `save_wall_clock=1.870 s` / `digest_zip=0.072 s` / `digest_dir=0.029 s`。
+- 门限：`digest_zip ≤ 2.0 s` ✅（0.072 s）；`digest_dir ≤ 2.0 s` ✅（0.029 s）。
+- **M4 量级不符的解释与风险评估（计划要求必须写明，不得默默放过）**：计划期望 `save_wall_clock` 与 `digest_zip + digest_dir` **同量级**；实测 1.870 s vs 0.101 s，**不同量级**。原因经 A/B 实测确证：在 50 MB 样本上连跑 3 次取最小值，`reporting ON = 1.922 s` / `reporting OFF = 1.824 s`（off 通过临时把两个 digest helper 替换为返回 `None` 实现，测后已复原）→ **本功能增量成本 = +0.098 s，约 +5.3%**。即：1.87 s 中的 ~1.77 s 是**既有保存路径**（50 MB 备份复制 + repack 循环）的开销，与本改动无关；报告本身只占约 5%。**不足 2 s 的门限，且增量占比单一数量级内可接受 → 无需整改**；若未来部件数或体积大幅上升，可考虑把 post-side digest 改为增量（只哈希 `_modified` 触及的部件），但当前不值得引入该复杂度。
+
+**步骤 9（文档面审计，原 T3.2）**
+- 三条模式（对象 = `README.md` / `docx_mcp/server.py` / 本 note / `.github/plans/*.md` 含本计划，过滤 `AUDIT-QUOTE`）：**三条均无输出且 `exit=1`** ✅。
+- 正控 `根因不可判定`：README **1** / note **2** / 本计划 **14**（各 ≥1）✅。
+- 术语一致 `part_byte_delta`：README 3 / server.py 4 / note 4 / 本计划 67（各 ≥1）✅。
+- **能失败证明（反例锚定，T-B）**：临时向 README 追加一行「根因是 XML 写出器重排了属性。」→ 模式 1 **命中**（`README.md:423`，输出非空、`exit=0`）→ 证明该模式仍有判别力；随后删除并复跑 → 恢复 `exit=1`；`git diff HEAD --stat README.md` 空（无残留）。 <!-- AUDIT-QUOTE: 本行按定义引用禁用措辞（反例锚定法的注入样本），审计时过滤 -->
+- **已知局限（照实记录，不宣称已杜绝）**：三个模式均为**单行语义**。跨行拼接、同义改写（如 "because the XML writer reorders attributes"）、无 copula 的暗示性归因**均可绕过**。本轮以「显式 copula + `grep -v AUDIT-QUOTE`」为口径，因此**不得**声称「已杜绝根因归因句」。
+- M5 抽查：带 `AUDIT-QUOTE` 的行仅 2 处实质标记（`:62` 非目标第 1 条的禁用措辞引用、`:785` 反例锚定法行），均属「引用禁用措辞」用途，**未**被用来掩盖真实归因句 ✅。
+
+**V1–V13 汇总**：V1 ✅ 7 passed；V2 ✅ 25 passed；V3 ✅ 1713/17；V4 ✅ 92.01% ≥ 88；V5 ✅ 三模式 exit=1 + 正控 ≥1；V6 ✅ 四文件 `part_byte_delta` ≥1 且 README/server.py `container layer` ≥1；V7 ✅ `not a byte-level difference` server.py=1/README=1、`part layer`=1、`predates` server.py=**2**；V8 ✅ ruff + format exit 0；V9 ✅ 6 条路径（按 6 的适配判据）；V10 ✅ README/note 结论段逐字一致（sha256 均 `9c308739…10aa0a1`）；**V11 ⚠️ skipped — de-ai-fier 的 `deai_review_file` 在本会话 Code Mode 目录中不可用**（`search(namespace="de-ai-fier")` 返回 0 项；且按本编排者政策，内部技术材料的 de-ai-fier 判据本身为 N/A）；V12 ✅ 见步骤 8；V13 ✅ `rewritten afterwards by sanitize_level` ≥1、`predates` server.py=2 / README=1，并另以运行时断言验证 `save_document(sanitize_level=1)` 的返回确实带后缀且 `sanitized.level == 1`。
+
+**偏差记录 T4.1-a**：步骤 6 的判据按「已按 task 提交」的实况替换为等价的**累计 commit 范围**判据（更严：要求工作树干净 + 恰好 6 条路径）。原判据假设工作树未提交，与本 plan 执行者的提交策略冲突。
+
+**Probe**：P1 `git log --oneline -1` → `6b3bdee`（计划基线 `1b51510` 之后的所有提交均为本任务产物，已在上面第 6 条逐条列出）；P2 见第 6 条（`git diff HEAD` 口径，无夹带）。
+
+**Manual（需人工阅读判断，未代做）**：M1 新小节可读性与是否暗示根因；M2 `:298` 连带修正句语义；M3 四类 note 文案（**已由脚本实证：delta 非空 / 无基线 / sanitize 后缀三类实际 JSON 与文档一致**，仅「报告失败」一类由 M5 式注入实验在本 task 的能失败证明中覆盖）；M4 见步骤 8 的解释。
+
+
 
 
 ---
