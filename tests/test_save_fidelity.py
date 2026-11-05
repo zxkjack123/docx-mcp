@@ -278,8 +278,9 @@ class TestPartFidelity:
         assert delta["marked_but_unchanged"] == []
         assert result["modified_parts"] == ["word/document.xml"]
         # The anti-misreading sentence is a runtime contract, not prose: deleting it
-        # from the note must break this test.
-        assert "not evidence of content loss" in delta["note"]
+        # from the note must break this test. Case-insensitive on purpose: the note
+        # emphasises NOT, while this assertion pins the presence of the negation.
+        assert "not evidence of content loss" in delta["note"].lower()
 
     def test_new_output_path_reports_no_baseline(self, test_docx: Path, tmp_path: Path):
         out = tmp_path / "brand-new.docx"  # does not exist -> no baseline
