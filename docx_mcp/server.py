@@ -1712,6 +1712,17 @@ def save_document(
             level=sanitize_level,
             redact_authors_as=redact_authors_as,
         )
+        # PM #4271 -- sanitize rewrites the same path, so the byte report above
+        # describes the pre-sanitize state. Say so instead of letting the report
+        # be read as a verdict about the file that ends up on disk.
+        delta = result.get("part_byte_delta")
+        if isinstance(delta, dict):
+            suffix = (
+                f"The on-disk file was rewritten afterwards by sanitize_level={sanitize_level}; "
+                "this report predates that rewrite and does not describe the final file."
+            )
+            prior = delta.get("note")
+            delta["note"] = f"{prior} {suffix}" if prior else suffix
     return _js(result)
 
 

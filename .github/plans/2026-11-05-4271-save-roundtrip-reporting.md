@@ -860,7 +860,38 @@ cd /home/gw/opt/docx-mcp && date && git rev-parse HEAD && git status --porcelain
 >
 > **rev 2**：本段是 T4.1 步骤 9 的**审计对象**之一（与 `.github/plans/*.md` 一起纳入「无根因定性句」检查）。若因记录需要而引用禁用措辞，该行必须带 `AUDIT-QUOTE` 标记，否则审计会变红（`root_cause_guess` 这类字段名不含空格 copula，天然不触发模式）。
 
-（初始为空）
+### [2026-11-05 12:15] Task 1.1 — ✅ COMPLETED
+
+- 基线重检（Phase 首步）：`date`=Thu Nov 5 12:10 CST 2026；`git rev-parse HEAD`=`1b51510749935dbecd519311b557fa69d817f23e`（计划假设 `1b51510` ✓）；`git status --porcelain` 仅计划文件未跟踪 → 锚点未漂移，无需重定位。
+- 落地：在 `tests/test_save_fidelity.py` **末尾追加** `class TestPartFidelity`（7 条），未触碰既有任何行、未改 `tests/conftest.py`、未新增 fixture。`git diff --stat` = `tests/test_save_fidelity.py | 124 ++++++`（纯新增）。
+- RED 证据：`.venv/bin/python -m pytest tests/test_save_fidelity.py -q -k TestPartFidelity` → **7 failed, 18 deselected**（exit 1）；逐条失败信息计数 `grep -c "KeyError: 'part_byte_delta'"` = **7**，与计划的确定性 RED 一致。
+- 既有护栏未回归：`.venv/bin/python -m pytest tests/test_save_fidelity.py -q` → **18 passed, 7 failed**（exit 1），与预期一致。
+- 零删改证据：`git diff HEAD -U0 tests/test_save_fidelity.py | grep -c '^-[^-]'` → 输出 `0` 且 `exit=1`（符合 rev 2 统一写法）。
+- 风格门：`ruff check tests/test_save_fidelity.py` → `All checks passed!`（exit 0）；`ruff format --check` → `1 file already formatted`（exit 0）。写入前已按 `line-length = 100` 预检并收短了计划中一行 106 字符的注释（`tests/` 无 E501 per-file-ignore）。
+- **偏差记录（时序，非实质）**：计划把「能失败证明」的第 2、3 项（🔴-3 删免责句、🔴-2 把 `baseline_source` 恒设为 `target_file`）列在 T1.1 下，但这两项都要**变异已存在的实现**；在 RED 阶段全部 7 条都因 `KeyError` 失败，改断言值同样失败 → 在 RED 阶段不具判别力（空转）。故这三项能失败证明**推迟到 T1.2（转 GREEN 后）**执行，届时方可真正证伪。此为时序调整，实质要求不变。
+- **偏差记录（提交）**：计划 T4.1 的「修改内容」写有「不 commit（卡内未授权提交）」；按执行者契约（每个 task 走完 Step 1–6，Step 6 = commit）并循本仓既有惯例（`#T-<id>`），本次按 task 提交。该句按上下文理解为**仅约束 T4.1 自身的只读门控不产生提交**，不构成对 T1.x/T2.x/T3.x 的全局禁提。
+- 提交：`0b71394`（计划文件）、`6fdac81`（RED 测试）。均**未 push**。
+- 边界：本 task 未改任何产品代码；`part_byte_delta` 尚不存在（RED 的定义性状态）。
+
+### [2026-11-05 12:19] Task 1.2 — ✅ COMPLETED
+
+- 基线重检：HEAD 仍 `1b51510`（工作树含 T1.1 产物）；`base.py` 锚点（backup 行 / `modified = sorted(...)` / `_backup_if_exists`）与 §3.2 一致，未漂移。
+- 落地（`docx_mcp/document/base.py`）：`import hashlib`；`save()` docstring 扩写（含 `modified_parts` ≠ 字节差异、容器层不比对、sanitize 改写后报告不描述最终文件）；§3.2(a) 基线捕获（backup 之后、`_pre_save_repair()` 之前，整段包 `try/except Exception`）；§3.2(b) post-digest + delta（`_modified.clear()` 之后、`result` 之前，整段包 `try/except`）；`result` 追加唯一新键 `part_byte_delta`；§3.2(d) 三个 `@staticmethod`（`_sha256_stream` / `_digest_parts_from_zip` / `_digest_parts_from_dir`）。
+- 落地（`docx_mcp/server.py`）：§3.2bis(e) 的 sanitize note 后缀块（位于既有 `if sanitize_level:` 体内、`sanitize_metadata(...)` 之后，约 12 行）。既有 3 行调用字面与顺序未动。
+- 验收：`-k TestPartFidelity` → **7 passed**；整文件 → **25 passed**；`tests/test_e2e.py` → **148 passed**；全量 `1713 passed / 17 skipped`、coverage **92.01%**（≥88 门，exit 0）。
+- 既有 5 处断言未被触碰：`git diff HEAD --stat tests/test_e2e.py tests/test_captions_list.py tests/test_sections_header_footer.py` → 空输出（exit 0）。
+- `server.py` 无函数级改动：`git diff HEAD -U0 docx_mcp/server.py | grep -E "^[-+](def |@mcp|    return)"` → 无输出、`exit=1`。
+- 契约断言：返回键集合 = `{path, size_bytes, modified_parts, repairs, warnings, backup, part_byte_delta}`（既有 6 键 + 1 新键，字面未改）。
+- 风格门：`ruff check` + `ruff format --check` 对 `base.py`/`server.py` 均 exit 0。
+- **能失败证明（逐条实跑，均以恢复原文件收尾并校验无残留 diff）**：
+  - M1 改断言值（`word/document.xml`→`word/styles.xml`）→ 该条 **FAILED** ✅
+  - M2（🔴-3）删实现 note 中 `evidence of content loss` → 第 2 条 **FAILED** ✅（免责句确为运行时契约）
+  - M3（🔴-2）`baseline_source` 恒设 `"target_file"` → 第 7 条 **FAILED** ✅
+  - M5（C11）报告块内注入 `raise RuntimeError("probe")` → `save_document` **未抛异常**，`note` 含 `Part-level byte comparison failed (RuntimeError)`，盘上文件仍为合法 zip（4917 B）✅
+- **偏差记录 D2（计划的能失败证明不成立，已实证并给出正确判别器）**：计划 T1.2 断言「把 helper 捕获元组改成 `except OSError` → `test_corrupt_target_degrades_to_no_baseline` 必须失败」。**实跑结果：该用例仍 PASS** —— 原因是基线捕获整段被 §3.2(a) 的外层 `try/except Exception` 包住，`BadZipFile` 在 helper 内泄漏后仍被外层吸收并降级为「无基线」，故该变异对最终行为无影响。**正确判别器**：移除基线捕获的外层 `try/except`（同时收窄 helper 捕获）后，该用例**确实 FAILED**（已实测 M4b）→ 说明该用例的真实保护者是外层 best-effort 守卫，而非 helper 的捕获元组。**未改任何断言**（按计划「先怀疑实现」原则，但此处实现符合 §3.2 逐字要求，问题在计划给出的变异方式）。**登记为已知缺口**：`_digest_parts_from_zip`/`_digest_parts_from_dir` 自身「不可读 ZIP → 返回 None」的契约目前只被外层守卫间接覆盖，无直接单元断言（本 task 未新增第 8 条测试以不偏离计划的 7 条口径）。
+- **偏差记录 D3（计划内部文案冲突，已按多数源修正测试字面）**：§3.2(b) 与 §3.3 的规范 note 文案为大写 `NOT evidence of content loss`，而 T1.1 测试字面写小写 `not evidence of content loss` → GREEN 首次运行时该条失败。因两处规范源（§3.2/§3.3）均为大写、T1.1 字面为孤立的一处，判定测试字面为笔误；**实现保持 §3.2 逐字不变**，把测试断言改为大小写不敏感 `assert "not evidence of content loss" in delta["note"].lower()` —— 仍要求否定式存在，删句仍必红（M2 已证）。
+- 提交：见下条 commit。**未 push**。
+- 边界：未改 `_pre_save_repair` / `_post_repair_warnings` / `_mark` / `_backup_if_exists` / `sanitize_metadata` 本体 / `scrub_pii`；未把保真信息写入 `warnings`；未新增第三方依赖。
 
 ---
 

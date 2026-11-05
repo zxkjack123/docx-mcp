@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import os
 import random
 import shutil
@@ -193,7 +194,19 @@ class BaseMixin:
     # ── Save ────────────────────────────────────────────────────────────────
 
     def save(self, output_path: str | None = None, *, backup: bool = True) -> dict:
-        """Write modified XML back to files and repack into a .docx."""
+        """Write modified XML back to files and repack into a .docx.
+
+        Returns a dict with ``path``, ``size_bytes``, ``modified_parts``,
+        ``repairs``, ``warnings`` (plus ``backup`` when a backup was made) and
+        ``part_byte_delta``. ``modified_parts`` lists the parts the editor marked
+        as dirty -- it is not a byte-level difference. ``part_byte_delta``
+        reports a part-by-part byte comparison at the part layer against the
+        pre-save target file on disk (container-layer metadata such as ZIP entry
+        order and timestamps is not compared); when the caller rewrites that path
+        after the save (for example ``save_document(sanitize_level>0)`` runs
+        ``sanitize_metadata`` on it), the report predates that rewrite and does
+        not describe the final file.
+        """
         if self.workdir is None:
             raise RuntimeError("No document is open")
 
@@ -204,6 +217,18 @@ class BaseMixin:
 
         # Backup existing file before overwriting
         backup_path = self._backup_if_exists(output) if backup else None
+
+        # PM #4271 -- part-level baseline. MUST be read here: after the backup and
+        # before the write-back loop below. Reading it after the repack would
+        # compare the output file with itself and always report zero differences.
+        # Best-effort: reporting must never turn an already-successful save into an
+        # exception, so any failure here degrades to "no baseline".
+        try:
+            same_target = Path(output).resolve() == Path(self.source_path).resolve()
+            parts_before = self._digest_parts_from_zip(output) if output.exists() else None
+        except Exception:  # noqa: BLE001 - best-effort reporting, degrade to no baseline
+            same_target = True
+            parts_before = None
 
         # Auto-repair known corruption patterns
         repairs = self._pre_save_repair()
@@ -243,16 +268,135 @@ class BaseMixin:
 
         modified = sorted(self._modified)
         self._modified.clear()
+
+        # PM #4271 -- container/part byte comparison. `modified_parts` lists parts the
+        # editor marked dirty; it is NOT a byte-level difference. Best-effort: any
+        # failure degrades to a null report plus a note, never to an exception (the
+        # output file has already been written at this point).
+        try:
+            parts_after = self._digest_parts_from_dir(self.workdir)
+            part_byte_delta: dict[str, object] = {
+                "baseline_source": None,
+                "changed": None,
+                "added": None,
+                "removed": None,
+                "marked_but_unchanged": None,
+                "note": (
+                    f"No pre-save baseline for {output}: the target file did not exist "
+                    "(or was not a readable DOCX container), so part bytes were not "
+                    "compared. This is informational only -- it is not a content-loss "
+                    "verdict. For a content-level comparison use compare_documents or "
+                    "diff_to_text."
+                ),
+            }
+            if parts_before is None:
+                pass  # keep the "no baseline" note set above
+            elif parts_after is None:
+                part_byte_delta["note"] = (
+                    "Part-level byte comparison could not be computed: the post-save "
+                    "working tree could not be hashed, so no delta is reported. This is "
+                    "informational only -- it is not a content-loss verdict."
+                )
+            else:
+                changed = sorted(
+                    name
+                    for name in parts_before
+                    if name in parts_after and parts_before[name] != parts_after[name]
+                )
+                added = sorted(set(parts_after) - set(parts_before))
+                removed = sorted(set(parts_before) - set(parts_after))
+                part_byte_delta.update(
+                    baseline_source=("target_file" if same_target else "other_existing_target"),
+                    changed=changed,
+                    added=added,
+                    removed=removed,
+                    marked_but_unchanged=sorted(set(modified) - set(changed) - set(added)),
+                )
+                if changed or added or removed:
+                    part_byte_delta["note"] = (
+                        f"Part bytes differ from the pre-save target file: changed="
+                        f"{len(changed)}, added={len(added)}, removed={len(removed)} of "
+                        f"{len(parts_before)} part(s). Detected byte changes are NOT "
+                        "evidence of content loss -- re-serialization alone rewrites "
+                        "bytes without changing document content."
+                    )
+                else:
+                    part_byte_delta["note"] = None
+        except Exception as exc:  # noqa: BLE001 - reporting is best-effort, never fatal
+            part_byte_delta = {
+                "baseline_source": None,
+                "changed": None,
+                "added": None,
+                "removed": None,
+                "marked_but_unchanged": None,
+                "note": (
+                    f"Part-level byte comparison failed ({type(exc).__name__}); no byte "
+                    "delta is reported. This is informational only -- it is not a "
+                    "content-loss verdict."
+                ),
+            }
+
         result = {
             "path": str(output),
             "size_bytes": output.stat().st_size,
             "modified_parts": modified,
             "repairs": repairs,
             "warnings": warnings,
+            "part_byte_delta": part_byte_delta,
         }
         if backup_path:
             result["backup"] = str(backup_path)
         return result
+
+    @staticmethod
+    def _sha256_stream(handle) -> str:
+        """SHA-256 of an open binary stream, read in 1 MiB chunks (never buffered whole)."""
+        digest = hashlib.sha256()
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+        return digest.hexdigest()
+
+    @staticmethod
+    def _digest_parts_from_zip(path: Path) -> dict[str, str] | None:
+        """Map every file member of a ZIP container to the SHA-256 of its bytes.
+
+        Directory entries are skipped; member names are normalised to forward
+        slashes. Returns ``None`` when *path* is not a readable ZIP container --
+        callers MUST treat that as "no baseline", never as "zero differences".
+        """
+        parts: dict[str, str] = {}
+        try:
+            with zipfile.ZipFile(path) as zf:
+                for info in zf.infolist():
+                    if info.is_dir():
+                        continue
+                    with zf.open(info.filename) as fh:
+                        parts[info.filename.replace("\\", "/")] = BaseMixin._sha256_stream(fh)
+        except (zipfile.BadZipFile, OSError, NotImplementedError):
+            # NOTE: zipfile.BadZipFile is NOT an OSError subclass, and an unsupported
+            # compression method raises NotImplementedError -- both must be listed.
+            return None
+        return parts
+
+    @staticmethod
+    def _digest_parts_from_dir(root: Path) -> dict[str, str] | None:
+        """Map every file under *root* to the SHA-256 of its bytes (streamed).
+
+        Returns ``None`` when the tree cannot be hashed completely -- a partial
+        mapping would silently under-report the delta, so callers MUST degrade.
+        """
+        parts: dict[str, str] = {}
+        try:
+            for dirpath, _dirnames, filenames in os.walk(root):
+                for name in filenames:
+                    fp = Path(dirpath) / name
+                    with open(fp, "rb") as fh:
+                        key = str(fp.relative_to(root)).replace(os.sep, "/")
+                        parts[key] = BaseMixin._sha256_stream(fh)
+        except (OSError, NotImplementedError):
+            # Partial results are worse than no result: degrade instead of guessing.
+            return None
+        return parts
 
     @staticmethod
     def _backup_if_exists(output: Path) -> Path | None:
