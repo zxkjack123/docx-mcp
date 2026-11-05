@@ -1700,6 +1700,30 @@ def save_document(
             clears document properties (creator, company, attached template).
             Values outside 0-3 are rejected.
         redact_authors_as: Author label written by sanitize levels >= 2.
+
+    Returns:
+        A JSON object carrying `path`, `size_bytes`, `modified_parts`, `repairs`,
+        `warnings` and `part_byte_delta`, plus `backup` when a backup was made and
+        `sanitized` when `sanitize_level > 0`.
+
+        `part_byte_delta` reports a part-by-part byte comparison of the pre-save
+        target file against what this call writes: `baseline_source`, `changed`,
+        `added`, `removed`, `marked_but_unchanged` and `note`. `baseline_source`
+        is `"target_file"` when the target is this document's own source path,
+        `"other_existing_target"` when the target is a different file that already
+        existed, and `null` when there was no readable pre-save target. With no
+        baseline, `changed` / `added` / `removed` / `marked_but_unchanged` are
+        `null` -- not `[]`, which would read as "compared, no differences".
+
+    Round-trip reporting is a measurement, not a verdict.
+        `modified_parts` lists parts the editor marked as dirty; it is not a byte-level difference.
+        Reporting covers the part layer (per-part bytes) against the pre-save target file;
+        container layer metadata (ZIP entry order, timestamps, compression) is not compared.
+        With `sanitize_level > 0` the same path is rewritten by the sanitizer after this save,
+        so `part_byte_delta` describes the pre-sanitize state and `note` says so explicitly
+        (`rewritten afterwards by sanitize_level=N; this report predates that rewrite`) --
+        it does not describe the file that ends up on disk.
+        Detected byte changes are not evidence of content loss.
     """
     if not 0 <= sanitize_level <= 3:
         raise ValueError("sanitize_level must be between 0 and 3")
