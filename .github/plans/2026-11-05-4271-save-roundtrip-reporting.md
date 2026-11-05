@@ -863,7 +863,7 @@ cd /home/gw/opt/docx-mcp && date && git rev-parse HEAD && git status --porcelain
 ### [2026-11-05 12:15] Task 1.1 — ✅ COMPLETED
 
 - 基线重检（Phase 首步）：`date`=Thu Nov 5 12:10 CST 2026；`git rev-parse HEAD`=`1b51510749935dbecd519311b557fa69d817f23e`（计划假设 `1b51510` ✓）；`git status --porcelain` 仅计划文件未跟踪 → 锚点未漂移，无需重定位。
-- 落地：在 `tests/test_save_fidelity.py` **末尾追加** `class TestPartFidelity`（7 条），未触碰既有任何行、未改 `tests/conftest.py`、未新增 fixture。`git diff --stat` = `tests/test_save_fidelity.py | 124 ++++++`（纯新增）。
+- 落地：在 `tests/test_save_fidelity.py` **末尾追加** `class TestPartFidelity`（7 条），未触碰既有任何行、未改 `tests/conftest.py`、未新增 fixture。`git diff --stat` = `tests/test_save_fidelity.py | 124 ++++++`（纯新增）。**口径说明**：124 是本提交（`6fdac81`）当时的行数；其后 `da1a97a` 的字面修正使**累计**（`1b51510..HEAD`）为 **125** 行 —— 两个数字都对，只是口径不同，避免与独立验收方按累计口径测得的 125 相互矛盾。
 - RED 证据：`.venv/bin/python -m pytest tests/test_save_fidelity.py -q -k TestPartFidelity` → **7 failed, 18 deselected**（exit 1）；逐条失败信息计数 `grep -c "KeyError: 'part_byte_delta'"` = **7**，与计划的确定性 RED 一致。
 - 既有护栏未回归：`.venv/bin/python -m pytest tests/test_save_fidelity.py -q` → **18 passed, 7 failed**（exit 1），与预期一致。
 - 零删改证据：`git diff HEAD -U0 tests/test_save_fidelity.py | grep -c '^-[^-]'` → 输出 `0` 且 `exit=1`（符合 rev 2 统一写法）。
