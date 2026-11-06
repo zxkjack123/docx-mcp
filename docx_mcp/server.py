@@ -19,10 +19,12 @@ import uuid
 
 from mcp.server import MCPServer
 
+from docx_mcp import __version__
 from docx_mcp.document import DocxDocument
 
 mcp = MCPServer(
     "docx-mcp",
+    version=__version__,
     instructions=(
         "This server edits Word (.docx) documents. Open a document first with "
         "open_document, then use other tools to read, edit, and save. Changes are "
