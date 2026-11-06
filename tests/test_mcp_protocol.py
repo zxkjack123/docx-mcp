@@ -189,6 +189,17 @@ def _count_declared_tools() -> int:
     but never registered: both sides read the same singleton, so both miss it and
     the sets still match. The source text still shows the decorator, so the counts
     diverge.
+
+    What this deliberately does not see:
+
+    - **Names.** It counts decorators, so replacing one tool with another leaves
+      the count unchanged. Only the three tools named explicitly in the caller
+      have a name-level guard.
+    - **Syntax other than ``@mcp.tool(...)`` on a def.** Moving tools into a
+      separate module, aliasing the server object, or registering through a
+      factory would make the count too low and raise a *false* red with a
+      misleading message. If tools are ever restructured that way, this helper
+      needs to follow them.
     """
     source = (REPO_ROOT / "docx_mcp" / "server.py").read_text(encoding="utf-8")
     count = 0
