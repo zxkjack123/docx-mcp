@@ -35,6 +35,7 @@ from docx_mcp import server as server_module
 TIMEOUT = 60
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+TOOL_SNAPSHOT = REPO_ROOT / "tests" / "fixtures" / "tools_snapshot.txt"
 
 
 def _initialize_message() -> dict:
@@ -237,6 +238,48 @@ def test_tools_list_matches_registered_tools(handshake: dict) -> None:
 
     for required in ("open_document", "save_document", "docx_list_captions"):
         assert required in over_the_wire
+
+
+def _load_tool_snapshot() -> set[str]:
+    """Read the frozen tool-name snapshot, failing with a fixable message."""
+    assert TOOL_SNAPSHOT.exists(), (
+        f"{TOOL_SNAPSHOT.relative_to(REPO_ROOT)} is missing -- generate it with "
+        "`python tests/generate_tools_snapshot.py --write`"
+    )
+    names = {
+        line.strip()
+        for line in TOOL_SNAPSHOT.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    assert names, (
+        f"{TOOL_SNAPSHOT.relative_to(REPO_ROOT)} is empty -- regenerate it with "
+        "`python tests/generate_tools_snapshot.py --write`"
+    )
+    return names
+
+
+def test_tools_list_matches_frozen_snapshot(handshake: dict) -> None:
+    """The exposed tool names must equal the committed snapshot.
+
+    Neither the registry comparison nor the decorator count can see one tool
+    swapped for another: both sides of the former read the same singleton, and
+    the latter only counts. A frozen reference is the only check that notices,
+    which is why the snapshot is committed rather than derived at test time.
+    """
+    result = _by_id(handshake["responses"], 2).get("result")
+    assert result is not None, "tools/list returned an error"
+    over_the_wire = {tool["name"] for tool in result["tools"]}
+
+    snapshot = _load_tool_snapshot()
+    missing = sorted(snapshot - over_the_wire)
+    unexpected = sorted(over_the_wire - snapshot)
+    assert not missing and not unexpected, (
+        "the tool surface drifted from tools_snapshot.txt -- "
+        f"snapshot names missing over the wire: {missing}; "
+        f"wire names absent from the snapshot: {unexpected}. "
+        "If the change is intended, run "
+        "`python tests/generate_tools_snapshot.py --write` and review the diff."
+    )
 
 
 def test_server_startup_does_not_write_outside_home(handshake: dict) -> None:
