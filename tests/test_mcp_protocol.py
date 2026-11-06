@@ -14,6 +14,7 @@ asserts the real home was left alone.
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import json
 import os
@@ -180,6 +181,30 @@ def test_initialize_reports_name_version_and_capabilities(handshake: dict) -> No
     assert "tools" in result["capabilities"]
 
 
+def _count_declared_tools() -> int:
+    """Count ``@mcp.tool(...)`` decorators in server.py by parsing the source.
+
+    This is the signal that is independent of runtime state. Comparing the wire
+    tool set against the in-process registry cannot catch a tool that is declared
+    but never registered: both sides read the same singleton, so both miss it and
+    the sets still match. The source text still shows the decorator, so the counts
+    diverge.
+    """
+    source = (REPO_ROOT / "docx_mcp" / "server.py").read_text(encoding="utf-8")
+    count = 0
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for decorator in node.decorator_list:
+            target = decorator.func if isinstance(decorator, ast.Call) else decorator
+            if not isinstance(target, ast.Attribute) or target.attr != "tool":
+                continue
+            owner = target.value
+            if isinstance(owner, ast.Name) and owner.id == "mcp":
+                count += 1
+    return count
+
+
 def test_tools_list_matches_registered_tools(handshake: dict) -> None:
     """The transport must expose exactly the tools registered in-process."""
     result = _by_id(handshake["responses"], 2).get("result")
@@ -191,6 +216,13 @@ def test_tools_list_matches_registered_tools(handshake: dict) -> None:
 
     registered = asyncio.run(server_module.mcp.list_tools())
     assert set(over_the_wire) == {tool.name for tool in registered}
+
+    # Independent cross-check: source declarations vs what actually reached the wire.
+    declared = _count_declared_tools()
+    assert declared == len(over_the_wire), (
+        f"server.py declares {declared} @mcp.tool decorators but the wire exposes "
+        f"{len(over_the_wire)} tools -- a declared tool did not register"
+    )
 
     for required in ("open_document", "save_document", "docx_list_captions"):
         assert required in over_the_wire
