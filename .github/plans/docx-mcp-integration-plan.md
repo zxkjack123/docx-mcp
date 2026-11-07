@@ -4,7 +4,7 @@
 |------|-----|
 | 版本 | v1.0 |
 | 生成日期 | 2026-07-24 |
-| 状态 | Step 1 ✅ / Steps 2-3 📋 |
+| 状态 | Step 1 ✅ · Step 2 产物✅（行为验证未做）· Step 3 规则✅（端到端验证未做） |
 | 目标 | 将 docx-mcp 集成到现有 agent 生态，填补直接 DOCX 操作空白 |
 
 ---
@@ -295,7 +295,7 @@ EOF
 
 ### Step 2 验证（待执行）
 
-- [ ] 指令文件已创建于 ~/.config/opencode/instructions/docx-workflow.instructions.md
+- [x] 指令文件已创建于 ~/.config/opencode/instructions/docx-workflow.instructions.md（2026-11-07 核实：13553 B，含 `## Tool Selection Matrix` 与 `## Agent Routing Rules`）
 - [ ] Agent 在给定了"将此合同中的 Net 30 改为 Net 60"时正确选择了 docx-mcp
 - [ ] Agent 在给定了"将此 MD 转换为 DOCX"时正确选择了 formatforge
 - [ ] Agent 在给定了"在 DOCX 中添加脚注然后导出为 LaTeX"时正确串联了 docx-mcp → formatforge
@@ -304,6 +304,8 @@ EOF
 
 - [ ] 学术管道测试：创建论文 MD → formatforge 转换 → mcpzotero 引用注入 → docx-mcp 编辑 → manuscript-lint 审计
 - [ ] Agent 不需要用户提示即可正确完成 zcite 占位符 → inject_citations → 在 Word 中刷新的完整循环
+
+> **状态说明（2026-11-07）**：Step 2 的指令文件与 Step 3 的路由规则**均已落盘**，上表第 1 项据此核实并勾选。其余 5 项需要实际运行 agent 场景的行为/端到端验证（`tests/` 中没有对应用例），本轮**未执行**，故保持未勾选 —— **未勾选 = 未验证，不等于未实现**。
 
 ---
 
